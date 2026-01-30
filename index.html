@@ -28,6 +28,8 @@
         .bar-chart { display: flex; flex-direction: column; gap: 8px; }
         .bar-item { display: flex; align-items: center; gap: 8px; }
         .bar { height: 24px; background: linear-gradient(90deg, #F97316, #FB923C); border-radius: 4px; }
+        .bar-blue { height: 24px; background: linear-gradient(90deg, #3B82F6, #60A5FA); border-radius: 4px; }
+        .bar-green { height: 24px; background: linear-gradient(90deg, #10B981, #34D399); border-radius: 4px; }
         .order-card { background: white; border: 1px solid #E5E7EB; border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
         .order-card-header { background: #f5f5f5; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; font-size: 14px; color: #666; }
         .order-card-body { padding: 16px; }
@@ -51,6 +53,13 @@
         .order-status-table th { background: #374151; color: white; padding: 12px 8px; font-size: 14px; text-align: left; }
         .order-status-table td { padding: 12px 8px; font-size: 14px; border-bottom: 1px solid #E5E7EB; }
         .order-status-table tbody tr:hover { background: #FEF3C7; }
+        .stats-section { background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stats-section-title { font-size: 16px; font-weight: 700; color: #374151; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .stats-item { background: #f8fafc; border-radius: 8px; padding: 12px; }
+        .stats-item-label { font-size: 13px; color: #6b7280; margin-bottom: 4px; }
+        .stats-item-value { font-size: 18px; font-weight: 700; color: #1f2937; }
+        .stats-item-count { font-size: 12px; color: #9ca3af; }
     </style>
 </head>
 <body class="pb-20">
@@ -216,7 +225,22 @@
                     <button onclick="loadAllOrderStatus()" class="py-3 bg-gray-500 text-white font-semibold rounded-lg">전체</button>
                 </div>
             </div>
+            
+            <!-- 기본 통계 -->
             <div id="statusSummary" class="grid grid-cols-2 gap-3 mb-4"></div>
+            
+            <!-- 결제수단별 통계 -->
+            <div id="paymentMethodStats" class="stats-section" style="display:none;">
+                <div class="stats-section-title">💳 결제수단별 통계</div>
+                <div id="paymentMethodChart" class="bar-chart"></div>
+            </div>
+            
+            <!-- 유입경로별 통계 -->
+            <div id="sourceStats" class="stats-section" style="display:none;">
+                <div class="stats-section-title">📍 유입경로별 통계</div>
+                <div id="sourceStatsChart" class="bar-chart"></div>
+            </div>
+            
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="table-container" id="statusTableContainer"></div>
             </div>
@@ -702,13 +726,74 @@ async function deleteCustomer(phone) {
         function renderOrderStatus() {
             const orders = currentStatusOrders;
             const total = orders.reduce((s, o) => s + (Number(o.amount)||0), 0);
+            const paidTotal = orders.filter(o => o.paymentStatus === '완료').reduce((s, o) => s + (Number(o.amount)||0), 0);
+            const unpaidTotal = orders.filter(o => o.paymentStatus === '미완료').reduce((s, o) => s + (Number(o.amount)||0), 0);
+            
+            // 기본 통계
             document.getElementById('statusSummary').innerHTML = 
                 '<div class="stat-card rounded-xl p-3"><div class="text-sm">총 주문</div><div class="text-xl font-bold text-orange-600">'+orders.length+'건</div></div>'+
-                '<div class="stat-card rounded-xl p-3"><div class="text-sm">총 매출</div><div class="text-xl font-bold text-orange-600">'+total.toLocaleString()+'원</div></div>';
+                '<div class="stat-card rounded-xl p-3"><div class="text-sm">총 매출</div><div class="text-xl font-bold text-orange-600">'+total.toLocaleString()+'원</div></div>'+
+                '<div class="stat-card rounded-xl p-3"><div class="text-sm">결제완료</div><div class="text-xl font-bold text-green-600">'+paidTotal.toLocaleString()+'원</div></div>'+
+                '<div class="stat-card rounded-xl p-3"><div class="text-sm">미결제</div><div class="text-xl font-bold text-red-600">'+unpaidTotal.toLocaleString()+'원</div></div>';
             
+            // 결제수단별 통계
+            if (orders.length > 0) {
+                document.getElementById('paymentMethodStats').style.display = 'block';
+                document.getElementById('sourceStats').style.display = 'block';
+                
+                // 결제수단별 집계
+                const paymentMethodData = {};
+                orders.forEach(o => {
+                    const method = o.paymentMethod || '미지정';
+                    if (!paymentMethodData[method]) {
+                        paymentMethodData[method] = { count: 0, amount: 0 };
+                    }
+                    paymentMethodData[method].count++;
+                    paymentMethodData[method].amount += Number(o.amount) || 0;
+                });
+                
+                const pmEntries = Object.entries(paymentMethodData).sort((a, b) => b[1].amount - a[1].amount);
+                const pmMax = pmEntries[0]?.[1].amount || 1;
+                
+                document.getElementById('paymentMethodChart').innerHTML = pmEntries.map(([method, data]) => 
+                    '<div class="bar-item">' +
+                    '<div class="w-20 text-sm font-medium">' + method + '</div>' +
+                    '<div class="flex-1"><div class="bar-blue" style="width:' + (data.amount/pmMax*100) + '%"></div></div>' +
+                    '<div class="text-right" style="min-width:120px;"><span class="font-bold">' + data.amount.toLocaleString() + '원</span><span class="text-gray-500 text-xs ml-1">(' + data.count + '건)</span></div>' +
+                    '</div>'
+                ).join('') || '<div class="text-gray-500">데이터 없음</div>';
+                
+                // 유입경로별 집계
+                const sourceData = {};
+                orders.forEach(o => {
+                    const source = o.source || '미지정';
+                    if (!sourceData[source]) {
+                        sourceData[source] = { count: 0, amount: 0 };
+                    }
+                    sourceData[source].count++;
+                    sourceData[source].amount += Number(o.amount) || 0;
+                });
+                
+                const srcEntries = Object.entries(sourceData).sort((a, b) => b[1].amount - a[1].amount);
+                const srcMax = srcEntries[0]?.[1].amount || 1;
+                
+                document.getElementById('sourceStatsChart').innerHTML = srcEntries.map(([source, data]) => 
+                    '<div class="bar-item">' +
+                    '<div class="w-20 text-sm font-medium">' + source + '</div>' +
+                    '<div class="flex-1"><div class="bar-green" style="width:' + (data.amount/srcMax*100) + '%"></div></div>' +
+                    '<div class="text-right" style="min-width:120px;"><span class="font-bold">' + data.amount.toLocaleString() + '원</span><span class="text-gray-500 text-xs ml-1">(' + data.count + '건)</span></div>' +
+                    '</div>'
+                ).join('') || '<div class="text-gray-500">데이터 없음</div>';
+                
+            } else {
+                document.getElementById('paymentMethodStats').style.display = 'none';
+                document.getElementById('sourceStats').style.display = 'none';
+            }
+            
+            // 테이블
             document.getElementById('statusTableContainer').innerHTML = orders.length ? 
-                '<table class="order-status-table"><thead><tr><th>날짜</th><th>고객</th><th>메뉴</th><th>금액</th><th>결제</th></tr></thead><tbody>'+
-                orders.map(o => '<tr><td>'+o.deliveryDate+'</td><td>'+(o.receiverName||o.name)+'</td><td>'+o.menu+'</td><td>'+Number(o.amount).toLocaleString()+'원</td><td><span class="badge '+(o.paymentStatus==='완료'?'badge-success':'badge-danger')+'">'+o.paymentStatus+'</span></td></tr>').join('')+
+                '<table class="order-status-table"><thead><tr><th>날짜</th><th>고객</th><th>메뉴</th><th>금액</th><th>결제</th><th>수단</th><th>경로</th></tr></thead><tbody>'+
+                orders.map(o => '<tr><td>'+o.deliveryDate+'</td><td>'+(o.receiverName||o.name)+'</td><td>'+o.menu+'</td><td>'+Number(o.amount).toLocaleString()+'원</td><td><span class="badge '+(o.paymentStatus==='완료'?'badge-success':'badge-danger')+'">'+o.paymentStatus+'</span></td><td>'+(o.paymentMethod||'-')+'</td><td>'+(o.source||'-')+'</td></tr>').join('')+
                 '</tbody></table>' : '<div class="text-center text-gray-500 py-8">주문 없음</div>';
         }
 
@@ -848,5 +933,3 @@ loadOrdersFromServer().then(() => {
     </script>
 </body>
 </html>
-
-
