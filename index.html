@@ -60,6 +60,8 @@
         .stats-item-label { font-size: 13px; color: #6b7280; margin-bottom: 4px; }
         .stats-item-value { font-size: 18px; font-weight: 700; color: #1f2937; }
         .stats-item-count { font-size: 12px; color: #9ca3af; }
+        .custom-input-container { display: none; margin-top: 8px; }
+        .custom-input-container.show { display: block; }
     </style>
 </head>
 <body class="pb-20">
@@ -138,7 +140,10 @@
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">주문내용 *</label>
-                        <select id="menu" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg"></select>
+                        <select id="menu" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" onchange="toggleCustomMenu()"></select>
+                        <div id="customMenuContainer" class="custom-input-container">
+                            <input type="text" id="customMenu" class="w-full p-4 text-lg border-2 border-orange-300 rounded-lg" placeholder="주문내용을 직접 입력하세요">
+                        </div>
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">주문금액 *</label>
@@ -409,11 +414,13 @@
         function getPaymentMethods() { return JSON.parse(localStorage.getItem('paymentMethods') || '[]'); }
 
         function initializeData() {
-            if (!localStorage.getItem('menus')) localStorage.setItem('menus', JSON.stringify(['인절미', '송편', '절편', '가래떡', '꿀떡', '백설기']));
+            // 메뉴는 빈 배열로 초기화 (직접입력만 사용)
+            if (!localStorage.getItem('menus')) localStorage.setItem('menus', JSON.stringify([]));
             if (!localStorage.getItem('sources')) localStorage.setItem('sources', JSON.stringify(['지인소개', '당근', '네이버', '인스타그램', '기존고객']));
+            // 배송시간: 05시~21시
             if (!localStorage.getItem('deliveryTimes')) {
                 const times = [];
-                for (let i = 9; i <= 21; i++) times.push(i + '시');
+                for (let i = 5; i <= 21; i++) times.push(i.toString().padStart(2, '0') + '시');
                 localStorage.setItem('deliveryTimes', JSON.stringify(times));
             }
             if (!localStorage.getItem('paymentMethods')) localStorage.setItem('paymentMethods', JSON.stringify(['현금', '계좌이체', '카드']));
@@ -421,7 +428,13 @@
 
         function populateSelects() {
             const menus = getMenus(), sources = getSources(), times = getDeliveryTimes(), methods = getPaymentMethods();
-            document.getElementById('menu').innerHTML = '<option value="">선택</option>' + menus.map(m => '<option value="'+m+'">'+m+'</option>').join('');
+            
+            // 메뉴: 기존 메뉴 + 직접입력 옵션
+            let menuOptions = '<option value="">선택</option>';
+            menus.forEach(m => menuOptions += '<option value="'+m+'">'+m+'</option>');
+            menuOptions += '<option value="__custom__">✏️ 직접입력</option>';
+            document.getElementById('menu').innerHTML = menuOptions;
+            
             document.getElementById('source').innerHTML = '<option value="">선택</option>' + sources.map(s => '<option value="'+s+'">'+s+'</option>').join('');
             document.getElementById('deliveryTime').innerHTML = '<option value="">선택</option>' + times.map(t => '<option value="'+t+'">'+t+'</option>').join('');
             document.getElementById('paymentMethod').innerHTML = '<option value="">선택</option>' + methods.map(m => '<option value="'+m+'">'+m+'</option>').join('');
@@ -432,6 +445,21 @@
             document.getElementById('deliveryDate').valueAsDate = tomorrow;
             document.getElementById('statusStartDate').valueAsDate = new Date();
             document.getElementById('statusEndDate').valueAsDate = new Date();
+        }
+
+        // 직접입력 토글
+        function toggleCustomMenu() {
+            const menuSelect = document.getElementById('menu');
+            const customContainer = document.getElementById('customMenuContainer');
+            const customInput = document.getElementById('customMenu');
+            
+            if (menuSelect.value === '__custom__') {
+                customContainer.classList.add('show');
+                customInput.focus();
+            } else {
+                customContainer.classList.remove('show');
+                customInput.value = '';
+            }
         }
 
         function updateCurrentTimestamp() {
@@ -547,7 +575,12 @@
             const receiverName = document.getElementById('receiverName').value;
             const receiverPhone = document.getElementById('receiverPhone').value;
             const receiverAddress = document.getElementById('receiverAddress').value;
-            const menu = document.getElementById('menu').value;
+            
+            // 메뉴: 직접입력인 경우 customMenu 값 사용
+            const menuSelect = document.getElementById('menu').value;
+            const customMenu = document.getElementById('customMenu').value;
+            const menu = (menuSelect === '__custom__') ? customMenu : menuSelect;
+            
             const amount = document.getElementById('amount').value;
             const deliveryDate = document.getElementById('deliveryDate').value;
             const deliveryTime = document.getElementById('deliveryTime').value;
@@ -602,6 +635,8 @@
             document.getElementById('receiverName').classList.remove('disabled-input');
             document.getElementById('receiverPhone').classList.remove('disabled-input');
             document.getElementById('receiverAddress').classList.remove('disabled-input');
+            document.getElementById('customMenu').value = '';
+            document.getElementById('customMenuContainer').classList.remove('show');
             populateSelects();
         }
 
@@ -714,7 +749,14 @@ async function deleteCustomer(phone) {
             const s = document.getElementById('statusStartDate').value;
             const e = document.getElementById('statusEndDate').value;
             if (!s || !e) { alert('날짜 선택'); return; }
-            currentStatusOrders = getOrders().filter(o => o.deliveryDate >= s && o.deliveryDate <= e);
+            
+            // 주문일자(orderDate) 또는 배송일자(deliveryDate) 기준으로 필터링
+            currentStatusOrders = getOrders().filter(o => {
+                const orderDate = o.orderDate ? o.orderDate.split('T')[0] : '';
+                const deliveryDate = o.deliveryDate || '';
+                // 배송일자 기준으로 조회
+                return deliveryDate >= s && deliveryDate <= e;
+            });
             renderOrderStatus();
         }
 
@@ -863,7 +905,7 @@ async function deleteCustomer(phone) {
         function renderSettings() {
             document.getElementById('menuList').innerHTML = getMenus().map((m,i) => 
                 '<div class="flex justify-between items-center p-3 bg-orange-50 rounded-lg mb-2"><span>'+m+'</span><button onclick="deleteMenu('+i+')" class="text-red-500 font-bold">삭제</button></div>'
-            ).join('');
+            ).join('') || '<div class="text-gray-500 text-center py-2">등록된 메뉴 없음 (직접입력 사용)</div>';
             document.getElementById('sourceList').innerHTML = getSources().map((s,i) => 
                 '<div class="flex justify-between items-center p-3 bg-orange-50 rounded-lg mb-2"><span>'+s+'</span><button onclick="deleteSource('+i+')" class="text-red-500 font-bold">삭제</button></div>'
             ).join('');
