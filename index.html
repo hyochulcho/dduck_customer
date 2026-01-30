@@ -55,11 +55,6 @@
         .order-status-table tbody tr:hover { background: #FEF3C7; }
         .stats-section { background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .stats-section-title { font-size: 16px; font-weight: 700; color: #374151; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        .stats-item { background: #f8fafc; border-radius: 8px; padding: 12px; }
-        .stats-item-label { font-size: 13px; color: #6b7280; margin-bottom: 4px; }
-        .stats-item-value { font-size: 18px; font-weight: 700; color: #1f2937; }
-        .stats-item-count { font-size: 12px; color: #9ca3af; }
         .custom-input-container { display: none; margin-top: 8px; }
         .custom-input-container.show { display: block; }
     </style>
@@ -191,8 +186,7 @@
         <!-- 고객 검색 탭 -->
         <div id="tab-customers" class="tab-content">
             <div class="bg-white rounded-xl shadow-lg p-4 mb-4">
-                <input type="text" id="customerSearch" class="w-full p-4 text-lg border-2 border-orange-300 rounded-lg" placeholder="🔍 이름 또는 전화번호" oninput="filterCustomers(this.value)" onkeyup="filterCustomers(this.value)" onchange="filterCustomers(this.value)">
-
+                <input type="text" id="customerSearch" class="w-full p-4 text-lg border-2 border-orange-300 rounded-lg" placeholder="🔍 이름 또는 전화번호" oninput="filterCustomers(this.value)">
             </div>
             <div id="customerList"></div>
         </div>
@@ -329,19 +323,18 @@
                 <button onclick="deleteAllData()" class="w-full py-3 bg-red-500 text-white font-semibold rounded-lg">🗑️ 전체 삭제</button>
             </div>
         </div>
-		<!-- 고객 주문이력 모달 -->
-<div id="customerModal" class="modal" onclick="if(event.target===this)closeCustomerModal()">
 
-    <div class="modal-content">
-        <div class="bg-orange-500 text-white p-4 flex justify-between items-center">
-            <h3 class="text-lg font-bold" id="modalCustomerName">고객 주문이력</h3>
-            <button onclick="closeCustomerModal()" class="text-2xl font-bold">&times;</button>
+        <!-- 고객 주문이력 모달 -->
+        <div id="customerModal" class="modal" onclick="if(event.target===this)closeCustomerModal()">
+            <div class="modal-content">
+                <div class="bg-orange-500 text-white p-4 flex justify-between items-center">
+                    <h3 class="text-lg font-bold" id="modalCustomerName">고객 주문이력</h3>
+                    <button onclick="closeCustomerModal()" class="text-2xl font-bold">&times;</button>
+                </div>
+                <div class="p-4" id="modalCustomerInfo"></div>
+                <div class="p-4 border-t" id="modalOrderHistory"></div>
+            </div>
         </div>
-        <div class="p-4" id="modalCustomerInfo"></div>
-        <div class="p-4 border-t" id="modalOrderHistory"></div>
-    </div>
-</div>
-
     </main>
 
     <script>
@@ -410,24 +403,18 @@
         function getOrders() { return JSON.parse(localStorage.getItem('orders') || '[]'); }
         function getMenus() { return JSON.parse(localStorage.getItem('menus') || '[]'); }
         function getSources() { return JSON.parse(localStorage.getItem('sources') || '[]'); }
-        function getDeliveryTimes() { return JSON.parse(localStorage.getItem('deliveryTimes') || '[]'); }
         function getPaymentMethods() { return JSON.parse(localStorage.getItem('paymentMethods') || '[]'); }
 
         function initializeData() {
-            // 메뉴는 빈 배열로 초기화 (직접입력만 사용)
             if (!localStorage.getItem('menus')) localStorage.setItem('menus', JSON.stringify([]));
             if (!localStorage.getItem('sources')) localStorage.setItem('sources', JSON.stringify(['지인소개', '당근', '네이버', '인스타그램', '기존고객']));
-            // 배송시간: 05시~21시
-            if (!localStorage.getItem('deliveryTimes')) {
-                const times = [];
-                for (let i = 5; i <= 21; i++) times.push(i.toString().padStart(2, '0') + '시');
-                localStorage.setItem('deliveryTimes', JSON.stringify(times));
-            }
             if (!localStorage.getItem('paymentMethods')) localStorage.setItem('paymentMethods', JSON.stringify(['현금', '계좌이체', '카드']));
         }
 
         function populateSelects() {
-            const menus = getMenus(), sources = getSources(), times = getDeliveryTimes(), methods = getPaymentMethods();
+            const menus = getMenus();
+            const sources = getSources();
+            const methods = getPaymentMethods();
             
             // 메뉴: 기존 메뉴 + 직접입력 옵션
             let menuOptions = '<option value="">선택</option>';
@@ -436,10 +423,18 @@
             document.getElementById('menu').innerHTML = menuOptions;
             
             document.getElementById('source').innerHTML = '<option value="">선택</option>' + sources.map(s => '<option value="'+s+'">'+s+'</option>').join('');
-            document.getElementById('deliveryTime').innerHTML = '<option value="">선택</option>' + times.map(t => '<option value="'+t+'">'+t+'</option>').join('');
             document.getElementById('paymentMethod').innerHTML = '<option value="">선택</option>' + methods.map(m => '<option value="'+m+'">'+m+'</option>').join('');
             document.getElementById('filterSource').innerHTML = '<option value="">전체</option>' + sources.map(s => '<option value="'+s+'">'+s+'</option>').join('');
             
+            // 배송시간: 05시~21시 (매번 새로 생성)
+            let timeOptions = '<option value="">선택</option>';
+            for (let i = 5; i <= 21; i++) {
+                const timeStr = i.toString().padStart(2, '0') + '시';
+                timeOptions += '<option value="' + timeStr + '">' + timeStr + '</option>';
+            }
+            document.getElementById('deliveryTime').innerHTML = timeOptions;
+            
+            // 날짜 기본값 설정
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             document.getElementById('deliveryDate').valueAsDate = tomorrow;
@@ -501,20 +496,19 @@
 
         // ========== 고객 ==========
         function generateCustomers() {
-    const orders = getOrders();
-    const customers = {};
-    orders.forEach(o => {
-        const phone = String(o.ordererPhone || o.phone || '');
-        if (!phone) return;
-        const name = String(o.ordererName || o.name || '');
-        if (!customers[phone]) customers[phone] = { phone, name, orderCount: 0, totalAmount: 0, lastAddress: '' };
-        customers[phone].orderCount++;
-        customers[phone].totalAmount += Number(o.amount) || 0;
-        customers[phone].lastAddress = String(o.ordererAddress || o.address || '');
-    });
-    return Object.values(customers);
-}
-
+            const orders = getOrders();
+            const customers = {};
+            orders.forEach(o => {
+                const phone = String(o.ordererPhone || o.phone || '');
+                if (!phone) return;
+                const name = String(o.ordererName || o.name || '');
+                if (!customers[phone]) customers[phone] = { phone, name, orderCount: 0, totalAmount: 0, lastAddress: '' };
+                customers[phone].orderCount++;
+                customers[phone].totalAmount += Number(o.amount) || 0;
+                customers[phone].lastAddress = String(o.ordererAddress || o.address || '');
+            });
+            return Object.values(customers);
+        }
 
         function searchCustomer(phone) {
             const c = generateCustomers().find(c => c.phone === phone);
@@ -642,78 +636,71 @@
 
         // ========== 고객 목록 ==========
         function renderCustomers() {
-    const list = generateCustomers().sort((a, b) => b.orderCount - a.orderCount);
-    document.getElementById('customerList').innerHTML = list.map(c => 
-        '<div class="customer-card" onclick="showCustomerHistory(\''+c.phone+'\')" style="cursor:pointer;"><div class="text-lg font-bold">'+(c.name||'이름없음')+'</div><div class="text-sm text-gray-600">'+c.phone+'</div><div class="text-sm text-orange-600">주문 '+c.orderCount+'회 · '+c.totalAmount.toLocaleString()+'원</div></div>'
-    ).join('') || '<div class="text-center text-gray-500 py-8">고객이 없습니다</div>';
-}
-
+            const list = generateCustomers().sort((a, b) => b.orderCount - a.orderCount);
+            document.getElementById('customerList').innerHTML = list.map(c => 
+                '<div class="customer-card" onclick="showCustomerHistory(\''+c.phone+'\')" style="cursor:pointer;"><div class="text-lg font-bold">'+(c.name||'이름없음')+'</div><div class="text-sm text-gray-600">'+c.phone+'</div><div class="text-sm text-orange-600">주문 '+c.orderCount+'회 · '+c.totalAmount.toLocaleString()+'원</div></div>'
+            ).join('') || '<div class="text-center text-gray-500 py-8">고객이 없습니다</div>';
+        }
 
         function filterCustomers(q) {
-    const list = generateCustomers().filter(c => (c.name || '').includes(q) || (c.phone || '').includes(q));
-    document.getElementById('customerList').innerHTML = list.map(c => 
-        '<div class="customer-card" onclick="showCustomerHistory(\''+c.phone+'\')" style="cursor:pointer;"><div class="text-lg font-bold">'+(c.name||'이름없음')+'</div><div class="text-sm text-gray-600">'+(c.phone||'')+'</div><div class="text-sm text-orange-600">주문 '+c.orderCount+'회</div></div>'
-    ).join('') || '<div class="text-center text-gray-500 py-8">검색 결과 없음</div>';
-}
+            const list = generateCustomers().filter(c => (c.name || '').includes(q) || (c.phone || '').includes(q));
+            document.getElementById('customerList').innerHTML = list.map(c => 
+                '<div class="customer-card" onclick="showCustomerHistory(\''+c.phone+'\')" style="cursor:pointer;"><div class="text-lg font-bold">'+(c.name||'이름없음')+'</div><div class="text-sm text-gray-600">'+(c.phone||'')+'</div><div class="text-sm text-orange-600">주문 '+c.orderCount+'회</div></div>'
+            ).join('') || '<div class="text-center text-gray-500 py-8">검색 결과 없음</div>';
+        }
 
-function showCustomerHistory(phone) {
-    const customers = generateCustomers();
-    const customer = customers.find(c => c.phone === phone);
-    const orders = getOrders().filter(o => String(o.ordererPhone || o.phone) === phone);
-    
-    if (!customer) return;
-    
-    document.getElementById('modalCustomerName').textContent = (customer.name || '이름없음') + ' 주문이력';
-    document.getElementById('modalCustomerInfo').innerHTML = 
-        '<div class="bg-gray-100 rounded-lg p-3">' +
-        '<div class="font-bold text-lg">' + (customer.name || '이름없음') + '</div>' +
-        '<div class="text-gray-600">' + customer.phone + '</div>' +
-        '<div class="text-orange-600 font-semibold">총 ' + customer.orderCount + '회 주문 · ' + customer.totalAmount.toLocaleString() + '원</div>' +
-        '</div>' +
-        '<button onclick="deleteCustomer(\'' + phone + '\')" class="w-full mt-3 py-2 bg-red-500 text-white font-semibold rounded-lg">🗑️ 이 고객 삭제</button>';
-    
-    document.getElementById('modalOrderHistory').innerHTML = orders.length ? 
-        orders.map(o => 
-            '<div class="border-b py-3">' +
-            '<div class="flex justify-between"><span class="font-bold">' + o.menu + '</span><span class="text-orange-600">' + Number(o.amount).toLocaleString() + '원</span></div>' +
-            '<div class="text-sm text-gray-600">배송: ' + (o.deliveryDate || '').split('T')[0] + ' ' + (o.deliveryTime || '') + '</div>' +
-            '<div class="text-sm"><span class="badge ' + (o.paymentStatus === '완료' ? 'badge-success' : 'badge-danger') + '">' + o.paymentStatus + '</span></div>' +
-            (o.memo ? '<div class="text-sm text-gray-500 mt-1">💬 ' + o.memo + '</div>' : '') +
-            '</div>'
-        ).join('') : '<div class="text-gray-500 text-center">주문 이력 없음</div>';
-    
-    document.getElementById('customerModal').classList.add('show');
-}
+        function showCustomerHistory(phone) {
+            const customers = generateCustomers();
+            const customer = customers.find(c => c.phone === phone);
+            const orders = getOrders().filter(o => String(o.ordererPhone || o.phone) === phone);
+            
+            if (!customer) return;
+            
+            document.getElementById('modalCustomerName').textContent = (customer.name || '이름없음') + ' 주문이력';
+            document.getElementById('modalCustomerInfo').innerHTML = 
+                '<div class="bg-gray-100 rounded-lg p-3">' +
+                '<div class="font-bold text-lg">' + (customer.name || '이름없음') + '</div>' +
+                '<div class="text-gray-600">' + customer.phone + '</div>' +
+                '<div class="text-orange-600 font-semibold">총 ' + customer.orderCount + '회 주문 · ' + customer.totalAmount.toLocaleString() + '원</div>' +
+                '</div>' +
+                '<button onclick="deleteCustomer(\'' + phone + '\')" class="w-full mt-3 py-2 bg-red-500 text-white font-semibold rounded-lg">🗑️ 이 고객 삭제</button>';
+            
+            document.getElementById('modalOrderHistory').innerHTML = orders.length ? 
+                orders.map(o => 
+                    '<div class="border-b py-3">' +
+                    '<div class="flex justify-between"><span class="font-bold">' + o.menu + '</span><span class="text-orange-600">' + Number(o.amount).toLocaleString() + '원</span></div>' +
+                    '<div class="text-sm text-gray-600">배송: ' + (o.deliveryDate || '').split('T')[0] + ' ' + (o.deliveryTime || '') + '</div>' +
+                    '<div class="text-sm"><span class="badge ' + (o.paymentStatus === '완료' ? 'badge-success' : 'badge-danger') + '">' + o.paymentStatus + '</span></div>' +
+                    (o.memo ? '<div class="text-sm text-gray-500 mt-1">💬 ' + o.memo + '</div>' : '') +
+                    '</div>'
+                ).join('') : '<div class="text-gray-500 text-center">주문 이력 없음</div>';
+            
+            document.getElementById('customerModal').classList.add('show');
+        }
 
+        function closeCustomerModal() {
+            document.getElementById('customerModal').classList.remove('show');
+        }
 
-function closeCustomerModal() {
-    document.getElementById('customerModal').classList.remove('show');
-}
-
-async function deleteCustomer(phone) {
-
-    if (!confirm('이 고객의 모든 주문을 삭제하시겠습니까?\n(복구 불가)')) return;
-    if (!confirm('정말 삭제하시겠습니까?')) return;
-    
-    let orders = getOrders();
-    const deleteOrders = orders.filter(o => String(o.ordererPhone || o.phone) === phone);
-    orders = orders.filter(o => String(o.ordererPhone || o.phone) !== phone);
-    localStorage.setItem('orders', JSON.stringify(orders));
-    
-    // 서버에서도 삭제
-    for (const order of deleteOrders) {
-        try {
-            await fetch(API_URL + '?action=deleteOrder&id=' + order.id);
-        } catch (e) {}
-    }
-    
-    closeCustomerModal();
-    renderCustomers();
-    showSyncStatus('✓ 삭제 완료!', 'success');
-}
-
-
-    
+        async function deleteCustomer(phone) {
+            if (!confirm('이 고객의 모든 주문을 삭제하시겠습니까?\n(복구 불가)')) return;
+            if (!confirm('정말 삭제하시겠습니까?')) return;
+            
+            let orders = getOrders();
+            const deleteOrders = orders.filter(o => String(o.ordererPhone || o.phone) === phone);
+            orders = orders.filter(o => String(o.ordererPhone || o.phone) !== phone);
+            localStorage.setItem('orders', JSON.stringify(orders));
+            
+            for (const order of deleteOrders) {
+                try {
+                    await fetch(API_URL + '?action=deleteOrder&id=' + order.id);
+                } catch (e) {}
+            }
+            
+            closeCustomerModal();
+            renderCustomers();
+            showSyncStatus('✓ 삭제 완료!', 'success');
+        }
 
         // ========== 오늘 배송 ==========
         function renderDeliveries() {
@@ -746,17 +733,26 @@ async function deleteCustomer(phone) {
 
         // ========== 주문 현황 ==========
         function loadOrderStatus() {
-            const s = document.getElementById('statusStartDate').value;
-            const e = document.getElementById('statusEndDate').value;
-            if (!s || !e) { alert('날짜 선택'); return; }
+            const startDate = document.getElementById('statusStartDate').value;
+            const endDate = document.getElementById('statusEndDate').value;
             
-            // 주문일자(orderDate) 또는 배송일자(deliveryDate) 기준으로 필터링
-            currentStatusOrders = getOrders().filter(o => {
-                const orderDate = o.orderDate ? o.orderDate.split('T')[0] : '';
-                const deliveryDate = o.deliveryDate || '';
-                // 배송일자 기준으로 조회
-                return deliveryDate >= s && deliveryDate <= e;
+            if (!startDate || !endDate) { 
+                alert('날짜를 선택하세요'); 
+                return; 
+            }
+            
+            const allOrders = getOrders();
+            console.log('전체 주문 수:', allOrders.length);
+            console.log('조회 기간:', startDate, '~', endDate);
+            
+            currentStatusOrders = allOrders.filter(o => {
+                const dd = o.deliveryDate;
+                if (!dd) return false;
+                const isInRange = dd >= startDate && dd <= endDate;
+                return isInRange;
             });
+            
+            console.log('필터링된 주문 수:', currentStatusOrders.length);
             renderOrderStatus();
         }
 
@@ -832,10 +828,17 @@ async function deleteCustomer(phone) {
                 document.getElementById('sourceStats').style.display = 'none';
             }
             
-            // 테이블
-            document.getElementById('statusTableContainer').innerHTML = orders.length ? 
+            // 테이블 (날짜순 정렬)
+            const sortedOrders = [...orders].sort((a, b) => {
+                if (a.deliveryDate !== b.deliveryDate) {
+                    return a.deliveryDate.localeCompare(b.deliveryDate);
+                }
+                return (a.deliveryTime || '').localeCompare(b.deliveryTime || '');
+            });
+            
+            document.getElementById('statusTableContainer').innerHTML = sortedOrders.length ? 
                 '<table class="order-status-table"><thead><tr><th>날짜</th><th>고객</th><th>메뉴</th><th>금액</th><th>결제</th><th>수단</th><th>경로</th></tr></thead><tbody>'+
-                orders.map(o => '<tr><td>'+o.deliveryDate+'</td><td>'+(o.receiverName||o.name)+'</td><td>'+o.menu+'</td><td>'+Number(o.amount).toLocaleString()+'원</td><td><span class="badge '+(o.paymentStatus==='완료'?'badge-success':'badge-danger')+'">'+o.paymentStatus+'</span></td><td>'+(o.paymentMethod||'-')+'</td><td>'+(o.source||'-')+'</td></tr>').join('')+
+                sortedOrders.map(o => '<tr><td>'+o.deliveryDate+'</td><td>'+(o.receiverName||o.name)+'</td><td>'+o.menu+'</td><td>'+Number(o.amount).toLocaleString()+'원</td><td><span class="badge '+(o.paymentStatus==='완료'?'badge-success':'badge-danger')+'">'+o.paymentStatus+'</span></td><td>'+(o.paymentMethod||'-')+'</td><td>'+(o.source||'-')+'</td></tr>').join('')+
                 '</tbody></table>' : '<div class="text-center text-gray-500 py-8">주문 없음</div>';
         }
 
@@ -962,16 +965,15 @@ async function deleteCustomer(phone) {
         }
 
         // ========== 초기화 ==========
-initializeData();
-populateSelects();
-updateCurrentTimestamp();
-setInterval(updateCurrentTimestamp, 1000);
+        initializeData();
+        populateSelects();
+        updateCurrentTimestamp();
+        setInterval(updateCurrentTimestamp, 1000);
 
-// 서버에서 데이터 불러온 후 화면 갱신
-loadOrdersFromServer().then(() => {
-    renderAll();
-});
-
+        // 서버에서 데이터 불러온 후 화면 갱신
+        loadOrdersFromServer().then(() => {
+            renderAll();
+        });
     </script>
 </body>
 </html>
