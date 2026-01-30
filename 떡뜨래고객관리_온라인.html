@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#F97316">
+    <title>떡집 고객관리 시스템</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #FEF3C7; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .nav-tab { transition: all 0.3s ease; }
+        .nav-tab.active { background: #F97316; color: white; font-weight: 600; }
+        input, select, textarea { font-size: 16px !important; }
+        .toggle-switch { width: 60px; height: 32px; background: #D1D5DB; border-radius: 16px; position: relative; cursor: pointer; transition: background 0.3s; }
+        .toggle-switch.active { background: #10B981; }
+        .toggle-switch::after { content: ''; position: absolute; width: 28px; height: 28px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: transform 0.3s; }
+        .toggle-switch.active::after { transform: translateX(28px); }
+        .stat-card { background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%); }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal.show { display: flex; }
+        .modal-content { background: white; border-radius: 12px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; }
+        .badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+        .badge-success { background: #4CAF50; color: white; }
+        .badge-danger { background: #f44336; color: white; }
+        .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+        .bar-item { display: flex; align-items: center; gap: 8px; }
+        .bar { height: 24px; background: linear-gradient(90deg, #F97316, #FB923C); border-radius: 4px; }
+        .order-card { background: white; border: 1px solid #E5E7EB; border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+        .order-card-header { background: #f5f5f5; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; font-size: 14px; color: #666; }
+        .order-card-body { padding: 16px; }
+        .info-section { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .info-section-title { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; }
+        .same-as-orderer-checkbox { background: #dbeafe; border: 2px solid #3b82f6; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .same-as-orderer-checkbox input { width: 20px; height: 20px; }
+        .same-as-orderer-checkbox label { font-weight: 600; color: #1e40af; cursor: pointer; }
+        .disabled-input { background: #e5e7eb !important; color: #6b7280 !important; }
+        .section-divider { border-top: 2px solid #e5e7eb; margin: 24px 0 16px 0; padding-top: 16px; }
+        .sync-status { position: fixed; top: 70px; right: 10px; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; z-index: 100; }
+        .sync-success { background: #d1fae5; color: #065f46; }
+        .sync-error { background: #fee2e2; color: #991b1b; }
+        .sync-loading { background: #e0e7ff; color: #3730a3; }
+        .customer-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .filter-section { background: #e3f2fd; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .customer-select-card { background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
+        .customer-select-card.selected { background: #e8f5e9; border-color: #4CAF50; }
+        .table-container { overflow-x: auto; }
+        .order-status-table { width: 100%; border-collapse: collapse; }
+        .order-status-table th { background: #374151; color: white; padding: 12px 8px; font-size: 14px; text-align: left; }
+        .order-status-table td { padding: 12px 8px; font-size: 14px; border-bottom: 1px solid #E5E7EB; }
+        .order-status-table tbody tr:hover { background: #FEF3C7; }
+    </style>
+</head>
+<body class="pb-20">
+    <header class="bg-white p-2 shadow-lg sticky top-0 z-30">
+    <div class="flex justify-center">
+        <a href="https://imgbb.com/"><img src="https://i.ibb.co/RTsghxnK/001-8.png" alt="제목을 입력해주세요 001 (8)" border="0"></a>
+    </div>
+</header>
+
+    <div id="syncStatus" class="sync-status" style="display:none;"></div>
+
+    <nav class="bg-white shadow-md sticky top-16 z-40">
+        <div class="flex overflow-x-auto">
+            <button class="nav-tab active flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('order', this)">📝 주문입력</button>
+            <button class="nav-tab flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('customers', this)">👥 고객검색</button>
+            <button class="nav-tab flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('delivery', this)">🚚 오늘배송</button>
+            <button class="nav-tab flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('status', this)">📋 주문현황</button>
+            <button class="nav-tab flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('message', this)">💬 문자</button>
+            <button class="nav-tab flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('stats', this)">📊 통계</button>
+            <button class="nav-tab flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('settings', this)">⚙️ 설정</button>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4 max-w-4xl">
+        <!-- 주문 입력 탭 -->
+        <div id="tab-order" class="tab-content active">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-4">
+                <h2 class="text-xl font-bold text-orange-600 mb-4">📝 새 주문 등록</h2>
+                
+                <div class="bg-gray-100 rounded-lg p-3 mb-4">
+                    📅 주문 접수일시: <span id="currentTimestamp" class="font-semibold"></span>
+                </div>
+                
+                <div class="info-section">
+                    <div class="info-section-title">👤 주문자 정보</div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">전화번호 *</label>
+                        <input type="tel" id="ordererPhone" class="w-full p-4 text-lg border-2 border-orange-300 rounded-lg" placeholder="010-1234-5678" oninput="searchCustomer(this.value); syncIfSameAsOrderer();">
+                        <div id="customerInfo" class="mt-2"></div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">이름 *</label>
+                        <input type="text" id="ordererName" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="주문자 이름" oninput="syncIfSameAsOrderer()">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">주소</label>
+                        <input type="text" id="ordererAddress" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="주문자 주소" oninput="syncIfSameAsOrderer()">
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-section-title">📦 받는 사람 정보</div>
+                    <div class="same-as-orderer-checkbox">
+                        <input type="checkbox" id="sameAsOrderer" onchange="toggleSameAsOrderer()">
+                        <label for="sameAsOrderer">주문자와 동일</label>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">이름 *</label>
+                        <input type="text" id="receiverName" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="받는 사람 이름">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">전화번호 *</label>
+                        <input type="tel" id="receiverPhone" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="010-1234-5678">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">배송 주소 *</label>
+                        <input type="text" id="receiverAddress" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="배송받을 주소">
+                    </div>
+                </div>
+
+                <div class="section-divider">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">📦 주문 정보</h3>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">유입경로 *</label>
+                        <select id="source" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg"></select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">주문내용 *</label>
+                        <select id="menu" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg"></select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">주문금액 *</label>
+                        <input type="number" id="amount" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="예: 35000">
+                    </div>
+                </div>
+
+                <div class="section-divider">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">🚚 배송 정보</h3>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">배송날짜 *</label>
+                            <input type="date" id="deliveryDate" class="w-full p-4 text-lg border-2 border-orange-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">배송시간 *</label>
+                            <select id="deliveryTime" class="w-full p-4 text-lg border-2 border-orange-300 rounded-lg"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">💳 결제 정보</h3>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">결제여부</label>
+                        <div class="flex items-center gap-3">
+                            <div class="toggle-switch active" id="paymentToggle" onclick="togglePayment()"></div>
+                            <span id="paymentLabel" class="text-lg font-semibold text-green-600">완료</span>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">결제수단 *</label>
+                        <select id="paymentMethod" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg"></select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">메모</label>
+                        <textarea id="memo" rows="3" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="특이사항"></textarea>
+                    </div>
+                </div>
+
+                <button onclick="saveOrder()" class="w-full py-5 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xl font-bold rounded-lg shadow-lg">✅ 주문 저장</button>
+            </div>
+        </div>
+
+        <!-- 고객 검색 탭 -->
+        <div id="tab-customers" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-4 mb-4">
+                <input type="text" id="customerSearch" class="w-full p-4 text-lg border-2 border-orange-300 rounded-lg" placeholder="🔍 이름 또는 전화번호" oninput="filterCustomers(this.value)" onkeyup="filterCustomers(this.value)" onchange="filterCustomers(this.value)">
+
+            </div>
+            <div id="customerList"></div>
+        </div>
+
+        <!-- 오늘 배송 탭 -->
+        <div id="tab-delivery" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-4 mb-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-orange-600">📅 <span id="todayDate"></span></h2>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="hideCompleted" onchange="renderDeliveries()" class="w-5 h-5">
+                        <span class="text-sm font-semibold">완료 숨기기</span>
+                    </label>
+                </div>
+            </div>
+            <div id="deliveryList"></div>
+        </div>
+
+        <!-- 주문현황 탭 -->
+        <div id="tab-status" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-4 mb-4">
+                <h2 class="text-xl font-bold text-orange-600 mb-4">📋 주문 조회</h2>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">시작</label>
+                        <input type="date" id="statusStartDate" class="w-full p-3 border-2 border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">종료</label>
+                        <input type="date" id="statusEndDate" class="w-full p-3 border-2 border-gray-300 rounded-lg">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="loadOrderStatus()" class="py-3 bg-blue-500 text-white font-semibold rounded-lg">조회</button>
+                    <button onclick="loadAllOrderStatus()" class="py-3 bg-gray-500 text-white font-semibold rounded-lg">전체</button>
+                </div>
+            </div>
+            <div id="statusSummary" class="grid grid-cols-2 gap-3 mb-4"></div>
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="table-container" id="statusTableContainer"></div>
+            </div>
+        </div>
+
+        <!-- 문자 발송 탭 -->
+        <div id="tab-message" class="tab-content">
+            <div class="filter-section">
+                <h2 class="text-xl font-bold mb-4">📱 문자 발송</h2>
+                <div class="mb-3">
+                    <label class="block text-sm font-semibold mb-1">유입경로</label>
+                    <select id="filterSource" class="w-full p-3 border-2 border-gray-300 rounded-lg"><option value="">전체</option></select>
+                </div>
+                <button onclick="applyMessageFilters()" class="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg">🔍 필터 적용</button>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-4 mb-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold">선택: <span id="selectedCount">0</span>명</h3>
+                    <div class="flex gap-2">
+                        <button onclick="selectAllCustomers()" class="text-sm bg-green-500 text-white px-3 py-1 rounded">전체선택</button>
+                        <button onclick="deselectAllCustomers()" class="text-sm bg-gray-500 text-white px-3 py-1 rounded">해제</button>
+                    </div>
+                </div>
+                <div id="messageCustomerList"></div>
+            </div>
+            <button onclick="copyPhoneNumbers()" class="w-full py-4 bg-gray-700 text-white text-lg font-bold rounded-lg">📋 전화번호 복사</button>
+        </div>
+
+        <!-- 통계 탭 -->
+        <div id="tab-stats" class="tab-content">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="stat-card rounded-xl shadow-lg p-4">
+                    <div class="text-sm text-gray-600">총 주문</div>
+                    <div class="text-2xl font-bold text-orange-600" id="statOrders">0</div>
+                </div>
+                <div class="stat-card rounded-xl shadow-lg p-4">
+                    <div class="text-sm text-gray-600">총 매출</div>
+                    <div class="text-2xl font-bold text-orange-600" id="statRevenue">0원</div>
+                </div>
+                <div class="stat-card rounded-xl shadow-lg p-4">
+                    <div class="text-sm text-gray-600">결제완료</div>
+                    <div class="text-2xl font-bold text-green-600" id="statPaid">0</div>
+                </div>
+                <div class="stat-card rounded-xl shadow-lg p-4">
+                    <div class="text-sm text-gray-600">미완료</div>
+                    <div class="text-2xl font-bold text-red-600" id="statUnpaid">0</div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-4">
+                <h3 class="text-lg font-bold mb-4">🏆 인기 메뉴 TOP 5</h3>
+                <div id="menuChart" class="bar-chart"></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-bold mb-4">📊 유입경로 분석</h3>
+                <div id="sourceChart" class="bar-chart"></div>
+            </div>
+        </div>
+
+        <!-- 설정 탭 -->
+        <div id="tab-settings" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-4">
+                <h3 class="text-lg font-bold mb-4">🔄 서버 동기화</h3>
+                <button onclick="syncFromServer()" class="w-full py-3 mb-2 bg-blue-500 text-white font-semibold rounded-lg">📥 서버에서 불러오기</button>
+                <button onclick="syncAllToServer()" class="w-full py-3 bg-green-500 text-white font-semibold rounded-lg">📤 서버로 전체 업로드</button>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-4">
+                <h3 class="text-lg font-bold mb-4">🍡 메뉴 관리</h3>
+                <div id="menuList" class="mb-3"></div>
+                <button onclick="addMenu()" class="w-full py-3 bg-orange-500 text-white font-semibold rounded-lg">+ 메뉴 추가</button>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-4">
+                <h3 class="text-lg font-bold mb-4">📍 유입경로 관리</h3>
+                <div id="sourceList" class="mb-3"></div>
+                <button onclick="addSource()" class="w-full py-3 bg-orange-500 text-white font-semibold rounded-lg">+ 경로 추가</button>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-bold mb-4">💾 데이터 관리</h3>
+                <button onclick="backupData()" class="w-full py-3 mb-2 bg-green-500 text-white font-semibold rounded-lg">📥 백업</button>
+                <button onclick="document.getElementById('restoreFile').click()" class="w-full py-3 mb-2 bg-blue-500 text-white font-semibold rounded-lg">📤 불러오기</button>
+                <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="restoreData(event)">
+                <button onclick="deleteAllData()" class="w-full py-3 bg-red-500 text-white font-semibold rounded-lg">🗑️ 전체 삭제</button>
+            </div>
+        </div>
+		<!-- 고객 주문이력 모달 -->
+<div id="customerModal" class="modal" onclick="if(event.target===this)closeCustomerModal()">
+
+    <div class="modal-content">
+        <div class="bg-orange-500 text-white p-4 flex justify-between items-center">
+            <h3 class="text-lg font-bold" id="modalCustomerName">고객 주문이력</h3>
+            <button onclick="closeCustomerModal()" class="text-2xl font-bold">&times;</button>
+        </div>
+        <div class="p-4" id="modalCustomerInfo"></div>
+        <div class="p-4 border-t" id="modalOrderHistory"></div>
+    </div>
+</div>
+
+    </main>
+
+    <script>
+        // ========== Google Sheets 연동 ==========
+        const API_URL = 'https://script.google.com/macros/s/AKfycbw2x_5ja-iMSN4SNYTMYHLLlf8nT8DdGiaLiqoBPcXYCEXtnLEXkdJ9q8cab8iu6SgJ/exec';
+
+        let currentStatusOrders = [];
+        let filteredCustomers = [];
+        let selectedCustomers = new Set();
+
+        function showSyncStatus(message, type) {
+            const el = document.getElementById('syncStatus');
+            el.textContent = message;
+            el.className = 'sync-status sync-' + type;
+            el.style.display = 'block';
+            if (type !== 'loading') setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        async function loadOrdersFromServer() {
+            showSyncStatus('서버에서 불러오는 중...', 'loading');
+            try {
+                const response = await fetch(API_URL + '?action=getOrders');
+                const result = await response.json();
+                if (result.success) {
+                    localStorage.setItem('orders', JSON.stringify(result.orders));
+                    showSyncStatus('✓ 동기화 완료!', 'success');
+                    return result.orders;
+                }
+            } catch (error) {
+                showSyncStatus('✗ 연결 실패', 'error');
+            }
+            return [];
+        }
+
+        async function saveOrderToServer(order) {
+            try {
+                const response = await fetch(API_URL + '?action=saveOrder&data=' + encodeURIComponent(JSON.stringify(order)));
+                const result = await response.json();
+                if (result.success) showSyncStatus('✓ 서버 저장 완료!', 'success');
+                return result.success;
+            } catch (error) {
+                showSyncStatus('✗ 저장 실패', 'error');
+                return false;
+            }
+        }
+
+        async function syncFromServer() {
+            await loadOrdersFromServer();
+            renderAll();
+            alert('✓ 서버에서 데이터를 불러왔습니다!');
+        }
+
+        async function syncAllToServer() {
+            const orders = getOrders();
+            if (!orders.length) { alert('업로드할 데이터가 없습니다.'); return; }
+            showSyncStatus('업로드 중...', 'loading');
+            let count = 0;
+            for (const order of orders) {
+                if (await saveOrderToServer(order)) count++;
+            }
+            showSyncStatus('✓ ' + count + '건 완료!', 'success');
+            alert('✓ ' + count + '건 업로드 완료!');
+        }
+
+        // ========== 기본 함수 ==========
+        function getOrders() { return JSON.parse(localStorage.getItem('orders') || '[]'); }
+        function getMenus() { return JSON.parse(localStorage.getItem('menus') || '[]'); }
+        function getSources() { return JSON.parse(localStorage.getItem('sources') || '[]'); }
+        function getDeliveryTimes() { return JSON.parse(localStorage.getItem('deliveryTimes') || '[]'); }
+        function getPaymentMethods() { return JSON.parse(localStorage.getItem('paymentMethods') || '[]'); }
+
+        function initializeData() {
+            if (!localStorage.getItem('menus')) localStorage.setItem('menus', JSON.stringify(['인절미', '송편', '절편', '가래떡', '꿀떡', '백설기']));
+            if (!localStorage.getItem('sources')) localStorage.setItem('sources', JSON.stringify(['지인소개', '당근', '네이버', '인스타그램', '기존고객']));
+            if (!localStorage.getItem('deliveryTimes')) {
+                const times = [];
+                for (let i = 9; i <= 21; i++) times.push(i + '시');
+                localStorage.setItem('deliveryTimes', JSON.stringify(times));
+            }
+            if (!localStorage.getItem('paymentMethods')) localStorage.setItem('paymentMethods', JSON.stringify(['현금', '계좌이체', '카드']));
+        }
+
+        function populateSelects() {
+            const menus = getMenus(), sources = getSources(), times = getDeliveryTimes(), methods = getPaymentMethods();
+            document.getElementById('menu').innerHTML = '<option value="">선택</option>' + menus.map(m => '<option value="'+m+'">'+m+'</option>').join('');
+            document.getElementById('source').innerHTML = '<option value="">선택</option>' + sources.map(s => '<option value="'+s+'">'+s+'</option>').join('');
+            document.getElementById('deliveryTime').innerHTML = '<option value="">선택</option>' + times.map(t => '<option value="'+t+'">'+t+'</option>').join('');
+            document.getElementById('paymentMethod').innerHTML = '<option value="">선택</option>' + methods.map(m => '<option value="'+m+'">'+m+'</option>').join('');
+            document.getElementById('filterSource').innerHTML = '<option value="">전체</option>' + sources.map(s => '<option value="'+s+'">'+s+'</option>').join('');
+            
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('deliveryDate').valueAsDate = tomorrow;
+            document.getElementById('statusStartDate').valueAsDate = new Date();
+            document.getElementById('statusEndDate').valueAsDate = new Date();
+        }
+
+        function updateCurrentTimestamp() {
+            const now = new Date();
+            const el = document.getElementById('currentTimestamp');
+            if (el) el.textContent = now.toLocaleString('ko-KR');
+        }
+
+        // ========== 체크박스 ==========
+        function toggleSameAsOrderer() {
+            const cb = document.getElementById('sameAsOrderer');
+            const rn = document.getElementById('receiverName');
+            const rp = document.getElementById('receiverPhone');
+            const ra = document.getElementById('receiverAddress');
+            
+            if (cb.checked) {
+                rn.value = document.getElementById('ordererName').value;
+                rp.value = document.getElementById('ordererPhone').value;
+                ra.value = document.getElementById('ordererAddress').value;
+                rn.disabled = rp.disabled = ra.disabled = true;
+                rn.classList.add('disabled-input');
+                rp.classList.add('disabled-input');
+                ra.classList.add('disabled-input');
+            } else {
+                rn.disabled = rp.disabled = ra.disabled = false;
+                rn.classList.remove('disabled-input');
+                rp.classList.remove('disabled-input');
+                ra.classList.remove('disabled-input');
+            }
+        }
+
+        function syncIfSameAsOrderer() {
+            if (document.getElementById('sameAsOrderer').checked) {
+                document.getElementById('receiverName').value = document.getElementById('ordererName').value;
+                document.getElementById('receiverPhone').value = document.getElementById('ordererPhone').value;
+                document.getElementById('receiverAddress').value = document.getElementById('ordererAddress').value;
+            }
+        }
+
+        // ========== 고객 ==========
+        function generateCustomers() {
+    const orders = getOrders();
+    const customers = {};
+    orders.forEach(o => {
+        const phone = String(o.ordererPhone || o.phone || '');
+        if (!phone) return;
+        const name = String(o.ordererName || o.name || '');
+        if (!customers[phone]) customers[phone] = { phone, name, orderCount: 0, totalAmount: 0, lastAddress: '' };
+        customers[phone].orderCount++;
+        customers[phone].totalAmount += Number(o.amount) || 0;
+        customers[phone].lastAddress = String(o.ordererAddress || o.address || '');
+    });
+    return Object.values(customers);
+}
+
+
+        function searchCustomer(phone) {
+            const c = generateCustomers().find(c => c.phone === phone);
+            const div = document.getElementById('customerInfo');
+            if (phone && c) {
+                div.innerHTML = '<div class="bg-blue-50 border-2 border-blue-300 rounded-lg p-3"><span class="text-blue-700 font-bold">기존 고객: '+c.name+'</span> <button onclick="fillCustomerInfo(\''+phone+'\')" class="ml-2 px-3 py-1 bg-blue-500 text-white rounded text-sm">불러오기</button></div>';
+            } else if (phone) {
+                div.innerHTML = '<div class="bg-green-50 border-2 border-green-300 rounded-lg p-3"><span class="text-green-700 font-bold">✨ 신규 고객</span></div>';
+            } else {
+                div.innerHTML = '';
+            }
+        }
+
+        function fillCustomerInfo(phone) {
+            const c = generateCustomers().find(c => c.phone === phone);
+            if (c) {
+                document.getElementById('ordererName').value = c.name || '';
+                document.getElementById('ordererAddress').value = c.lastAddress || '';
+                syncIfSameAsOrderer();
+            }
+        }
+
+        // ========== 탭 ==========
+        function switchTab(tab, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            if (btn) btn.classList.add('active');
+            renderAll();
+        }
+
+        function renderAll() {
+            renderCustomers();
+            renderDeliveries();
+            renderStats();
+            renderSettings();
+            renderMessageTab();
+        }
+
+        // ========== 결제 토글 ==========
+        function togglePayment() {
+            const t = document.getElementById('paymentToggle');
+            const l = document.getElementById('paymentLabel');
+            t.classList.toggle('active');
+            if (t.classList.contains('active')) {
+                l.textContent = '완료';
+                l.className = 'text-lg font-semibold text-green-600';
+            } else {
+                l.textContent = '미완료';
+                l.className = 'text-lg font-semibold text-red-600';
+            }
+        }
+
+        // ========== 주문 저장 ==========
+        function saveOrder() {
+            const ordererPhone = document.getElementById('ordererPhone').value;
+            const ordererName = document.getElementById('ordererName').value;
+            const receiverName = document.getElementById('receiverName').value;
+            const receiverPhone = document.getElementById('receiverPhone').value;
+            const receiverAddress = document.getElementById('receiverAddress').value;
+            const menu = document.getElementById('menu').value;
+            const amount = document.getElementById('amount').value;
+            const deliveryDate = document.getElementById('deliveryDate').value;
+            const deliveryTime = document.getElementById('deliveryTime').value;
+
+            if (!ordererPhone || !ordererName || !receiverName || !receiverPhone || !receiverAddress || !menu || !amount || !deliveryDate || !deliveryTime) {
+                alert('필수 항목을 모두 입력하세요');
+                return;
+            }
+
+            const order = {
+                id: Date.now(),
+                orderDate: new Date().toISOString(),
+                ordererName,
+                ordererPhone,
+                ordererAddress: document.getElementById('ordererAddress').value,
+                receiverName,
+                receiverPhone,
+                receiverAddress,
+                menu,
+                amount: parseInt(amount),
+                deliveryDate,
+                deliveryTime,
+                paymentStatus: document.getElementById('paymentToggle').classList.contains('active') ? '완료' : '미완료',
+                paymentMethod: document.getElementById('paymentMethod').value,
+                source: document.getElementById('source').value,
+                memo: document.getElementById('memo').value
+            };
+
+            const orders = getOrders();
+            orders.push(order);
+            localStorage.setItem('orders', JSON.stringify(orders));
+            saveOrderToServer(order);
+
+            alert('✅ 주문이 저장되었습니다!');
+            clearForm();
+        }
+
+        function clearForm() {
+            document.getElementById('ordererPhone').value = '';
+            document.getElementById('ordererName').value = '';
+            document.getElementById('ordererAddress').value = '';
+            document.getElementById('receiverName').value = '';
+            document.getElementById('receiverPhone').value = '';
+            document.getElementById('receiverAddress').value = '';
+            document.getElementById('amount').value = '';
+            document.getElementById('memo').value = '';
+            document.getElementById('customerInfo').innerHTML = '';
+            document.getElementById('sameAsOrderer').checked = false;
+            document.getElementById('receiverName').disabled = false;
+            document.getElementById('receiverPhone').disabled = false;
+            document.getElementById('receiverAddress').disabled = false;
+            document.getElementById('receiverName').classList.remove('disabled-input');
+            document.getElementById('receiverPhone').classList.remove('disabled-input');
+            document.getElementById('receiverAddress').classList.remove('disabled-input');
+            populateSelects();
+        }
+
+        // ========== 고객 목록 ==========
+        function renderCustomers() {
+    const list = generateCustomers().sort((a, b) => b.orderCount - a.orderCount);
+    document.getElementById('customerList').innerHTML = list.map(c => 
+        '<div class="customer-card" onclick="showCustomerHistory(\''+c.phone+'\')" style="cursor:pointer;"><div class="text-lg font-bold">'+(c.name||'이름없음')+'</div><div class="text-sm text-gray-600">'+c.phone+'</div><div class="text-sm text-orange-600">주문 '+c.orderCount+'회 · '+c.totalAmount.toLocaleString()+'원</div></div>'
+    ).join('') || '<div class="text-center text-gray-500 py-8">고객이 없습니다</div>';
+}
+
+
+        function filterCustomers(q) {
+    const list = generateCustomers().filter(c => (c.name || '').includes(q) || (c.phone || '').includes(q));
+    document.getElementById('customerList').innerHTML = list.map(c => 
+        '<div class="customer-card" onclick="showCustomerHistory(\''+c.phone+'\')" style="cursor:pointer;"><div class="text-lg font-bold">'+(c.name||'이름없음')+'</div><div class="text-sm text-gray-600">'+(c.phone||'')+'</div><div class="text-sm text-orange-600">주문 '+c.orderCount+'회</div></div>'
+    ).join('') || '<div class="text-center text-gray-500 py-8">검색 결과 없음</div>';
+}
+
+function showCustomerHistory(phone) {
+    const customers = generateCustomers();
+    const customer = customers.find(c => c.phone === phone);
+    const orders = getOrders().filter(o => String(o.ordererPhone || o.phone) === phone);
+    
+    if (!customer) return;
+    
+    document.getElementById('modalCustomerName').textContent = (customer.name || '이름없음') + ' 주문이력';
+    document.getElementById('modalCustomerInfo').innerHTML = 
+        '<div class="bg-gray-100 rounded-lg p-3">' +
+        '<div class="font-bold text-lg">' + (customer.name || '이름없음') + '</div>' +
+        '<div class="text-gray-600">' + customer.phone + '</div>' +
+        '<div class="text-orange-600 font-semibold">총 ' + customer.orderCount + '회 주문 · ' + customer.totalAmount.toLocaleString() + '원</div>' +
+        '</div>' +
+        '<button onclick="deleteCustomer(\'' + phone + '\')" class="w-full mt-3 py-2 bg-red-500 text-white font-semibold rounded-lg">🗑️ 이 고객 삭제</button>';
+    
+    document.getElementById('modalOrderHistory').innerHTML = orders.length ? 
+        orders.map(o => 
+            '<div class="border-b py-3">' +
+            '<div class="flex justify-between"><span class="font-bold">' + o.menu + '</span><span class="text-orange-600">' + Number(o.amount).toLocaleString() + '원</span></div>' +
+            '<div class="text-sm text-gray-600">배송: ' + (o.deliveryDate || '').split('T')[0] + ' ' + (o.deliveryTime || '') + '</div>' +
+            '<div class="text-sm"><span class="badge ' + (o.paymentStatus === '완료' ? 'badge-success' : 'badge-danger') + '">' + o.paymentStatus + '</span></div>' +
+            (o.memo ? '<div class="text-sm text-gray-500 mt-1">💬 ' + o.memo + '</div>' : '') +
+            '</div>'
+        ).join('') : '<div class="text-gray-500 text-center">주문 이력 없음</div>';
+    
+    document.getElementById('customerModal').classList.add('show');
+}
+
+
+function closeCustomerModal() {
+    document.getElementById('customerModal').classList.remove('show');
+}
+
+async function deleteCustomer(phone) {
+
+    if (!confirm('이 고객의 모든 주문을 삭제하시겠습니까?\n(복구 불가)')) return;
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+    
+    let orders = getOrders();
+    const deleteOrders = orders.filter(o => String(o.ordererPhone || o.phone) === phone);
+    orders = orders.filter(o => String(o.ordererPhone || o.phone) !== phone);
+    localStorage.setItem('orders', JSON.stringify(orders));
+    
+    // 서버에서도 삭제
+    for (const order of deleteOrders) {
+        try {
+            await fetch(API_URL + '?action=deleteOrder&id=' + order.id);
+        } catch (e) {}
+    }
+    
+    closeCustomerModal();
+    renderCustomers();
+    showSyncStatus('✓ 삭제 완료!', 'success');
+}
+
+
+    
+
+        // ========== 오늘 배송 ==========
+        function renderDeliveries() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('todayDate').textContent = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' });
+            
+            let orders = getOrders().filter(o => o.deliveryDate === today);
+            const hide = document.getElementById('hideCompleted').checked;
+            const done = JSON.parse(localStorage.getItem('completedOrders') || '{}');
+            if (hide) orders = orders.filter(o => !done[o.id]);
+
+            document.getElementById('deliveryList').innerHTML = orders.length ? orders.map(o => 
+                '<div class="order-card '+(done[o.id]?'opacity-50':'')+' '+(o.paymentStatus==='미완료'?'border-l-4 border-red-500':'')+'">'+
+                '<div class="order-card-header flex justify-between"><span>🚚 '+o.deliveryTime+'</span><label><input type="checkbox" '+(done[o.id]?'checked':'')+' onchange="toggleComplete('+o.id+')"> 완료</label></div>'+
+                '<div class="order-card-body"><div class="flex justify-between mb-2"><span class="font-bold text-lg">'+o.menu+'</span><span class="font-bold text-orange-600">'+Number(o.amount).toLocaleString()+'원</span></div>'+
+                '<div class="text-sm text-gray-600">📦 '+(o.receiverName||o.name)+' ('+(o.receiverPhone||o.phone)+')</div>'+
+                '<div class="text-sm text-gray-600">📍 '+(o.receiverAddress||o.deliveryAddress)+'</div>'+
+                '<div class="mt-2"><span class="badge '+(o.paymentStatus==='완료'?'badge-success':'badge-danger')+'">'+o.paymentStatus+'</span></div>'+
+                (o.memo?'<div class="mt-2 bg-yellow-50 p-2 rounded text-sm">💬 '+o.memo+'</div>':'')+
+                '</div></div>'
+            ).join('') : '<div class="text-center text-gray-500 py-8">오늘 배송 없음</div>';
+        }
+
+        function toggleComplete(id) {
+            const done = JSON.parse(localStorage.getItem('completedOrders') || '{}');
+            done[id] = !done[id];
+            localStorage.setItem('completedOrders', JSON.stringify(done));
+            renderDeliveries();
+        }
+
+        // ========== 주문 현황 ==========
+        function loadOrderStatus() {
+            const s = document.getElementById('statusStartDate').value;
+            const e = document.getElementById('statusEndDate').value;
+            if (!s || !e) { alert('날짜 선택'); return; }
+            currentStatusOrders = getOrders().filter(o => o.deliveryDate >= s && o.deliveryDate <= e);
+            renderOrderStatus();
+        }
+
+        function loadAllOrderStatus() {
+            currentStatusOrders = getOrders();
+            renderOrderStatus();
+        }
+
+        function renderOrderStatus() {
+            const orders = currentStatusOrders;
+            const total = orders.reduce((s, o) => s + (Number(o.amount)||0), 0);
+            document.getElementById('statusSummary').innerHTML = 
+                '<div class="stat-card rounded-xl p-3"><div class="text-sm">총 주문</div><div class="text-xl font-bold text-orange-600">'+orders.length+'건</div></div>'+
+                '<div class="stat-card rounded-xl p-3"><div class="text-sm">총 매출</div><div class="text-xl font-bold text-orange-600">'+total.toLocaleString()+'원</div></div>';
+            
+            document.getElementById('statusTableContainer').innerHTML = orders.length ? 
+                '<table class="order-status-table"><thead><tr><th>날짜</th><th>고객</th><th>메뉴</th><th>금액</th><th>결제</th></tr></thead><tbody>'+
+                orders.map(o => '<tr><td>'+o.deliveryDate+'</td><td>'+(o.receiverName||o.name)+'</td><td>'+o.menu+'</td><td>'+Number(o.amount).toLocaleString()+'원</td><td><span class="badge '+(o.paymentStatus==='완료'?'badge-success':'badge-danger')+'">'+o.paymentStatus+'</span></td></tr>').join('')+
+                '</tbody></table>' : '<div class="text-center text-gray-500 py-8">주문 없음</div>';
+        }
+
+        // ========== 통계 ==========
+        function renderStats() {
+            const orders = getOrders();
+            const total = orders.reduce((s, o) => s + (Number(o.amount)||0), 0);
+            document.getElementById('statOrders').textContent = orders.length;
+            document.getElementById('statRevenue').textContent = total.toLocaleString() + '원';
+            document.getElementById('statPaid').textContent = orders.filter(o => o.paymentStatus === '완료').length;
+            document.getElementById('statUnpaid').textContent = orders.filter(o => o.paymentStatus === '미완료').length;
+
+            const mc = {};
+            orders.forEach(o => mc[o.menu] = (mc[o.menu]||0) + 1);
+            const tm = Object.entries(mc).sort((a,b) => b[1]-a[1]).slice(0, 5);
+            const mm = tm[0]?.[1] || 1;
+            document.getElementById('menuChart').innerHTML = tm.map(([m,c]) => 
+                '<div class="bar-item"><div class="w-20 text-sm">'+m+'</div><div class="flex-1"><div class="bar" style="width:'+(c/mm*100)+'%"></div></div><div class="w-10 text-right">'+c+'</div></div>'
+            ).join('') || '<div class="text-gray-500">데이터 없음</div>';
+
+            const sc = {};
+            orders.forEach(o => { if(o.source) sc[o.source] = (sc[o.source]||0) + 1; });
+            const ts = Object.entries(sc).sort((a,b) => b[1]-a[1]);
+            const ms = ts[0]?.[1] || 1;
+            document.getElementById('sourceChart').innerHTML = ts.map(([s,c]) => 
+                '<div class="bar-item"><div class="w-20 text-sm">'+s+'</div><div class="flex-1"><div class="bar" style="width:'+(c/ms*100)+'%"></div></div><div class="w-10 text-right">'+c+'</div></div>'
+            ).join('') || '<div class="text-gray-500">데이터 없음</div>';
+        }
+
+        // ========== 문자 ==========
+        function renderMessageTab() { applyMessageFilters(); }
+        
+        function applyMessageFilters() {
+            const src = document.getElementById('filterSource').value;
+            let list = generateCustomers();
+            if (src) {
+                const phones = new Set(getOrders().filter(o => o.source === src).map(o => o.ordererPhone || o.phone));
+                list = list.filter(c => phones.has(c.phone));
+            }
+            filteredCustomers = list;
+            selectedCustomers.clear();
+            renderMessageCustomerList();
+        }
+
+        function renderMessageCustomerList() {
+            document.getElementById('messageCustomerList').innerHTML = filteredCustomers.map(c => 
+                '<div class="customer-select-card '+(selectedCustomers.has(c.phone)?'selected':'')+'" onclick="toggleSelect(\''+c.phone+'\')"><input type="checkbox" '+(selectedCustomers.has(c.phone)?'checked':'')+' onclick="event.stopPropagation()"> '+c.name+' ('+c.phone+')</div>'
+            ).join('') || '<div class="text-gray-500 text-center py-4">고객 없음</div>';
+            document.getElementById('selectedCount').textContent = selectedCustomers.size;
+        }
+
+        function toggleSelect(p) {
+            if (selectedCustomers.has(p)) selectedCustomers.delete(p);
+            else selectedCustomers.add(p);
+            renderMessageCustomerList();
+        }
+
+        function selectAllCustomers() { filteredCustomers.forEach(c => selectedCustomers.add(c.phone)); renderMessageCustomerList(); }
+        function deselectAllCustomers() { selectedCustomers.clear(); renderMessageCustomerList(); }
+        
+        function copyPhoneNumbers() {
+            if (!selectedCustomers.size) { alert('고객을 선택하세요'); return; }
+            navigator.clipboard.writeText(Array.from(selectedCustomers).join(',')).then(() => alert('✓ 복사 완료!'));
+        }
+
+        // ========== 설정 ==========
+        function renderSettings() {
+            document.getElementById('menuList').innerHTML = getMenus().map((m,i) => 
+                '<div class="flex justify-between items-center p-3 bg-orange-50 rounded-lg mb-2"><span>'+m+'</span><button onclick="deleteMenu('+i+')" class="text-red-500 font-bold">삭제</button></div>'
+            ).join('');
+            document.getElementById('sourceList').innerHTML = getSources().map((s,i) => 
+                '<div class="flex justify-between items-center p-3 bg-orange-50 rounded-lg mb-2"><span>'+s+'</span><button onclick="deleteSource('+i+')" class="text-red-500 font-bold">삭제</button></div>'
+            ).join('');
+        }
+
+        function addMenu() {
+            const n = prompt('새 메뉴:');
+            if (n) { const m = getMenus(); m.push(n); localStorage.setItem('menus', JSON.stringify(m)); populateSelects(); renderSettings(); }
+        }
+        function deleteMenu(i) {
+            if (confirm('삭제?')) { const m = getMenus(); m.splice(i,1); localStorage.setItem('menus', JSON.stringify(m)); populateSelects(); renderSettings(); }
+        }
+        function addSource() {
+            const n = prompt('새 경로:');
+            if (n) { const s = getSources(); s.push(n); localStorage.setItem('sources', JSON.stringify(s)); populateSelects(); renderSettings(); }
+        }
+        function deleteSource(i) {
+            if (confirm('삭제?')) { const s = getSources(); s.splice(i,1); localStorage.setItem('sources', JSON.stringify(s)); populateSelects(); renderSettings(); }
+        }
+
+        function backupData() {
+            const data = { orders: getOrders(), menus: getMenus(), sources: getSources() };
+            const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = '떡집백업_' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
+        }
+
+        function restoreData(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    try {
+                        const data = JSON.parse(ev.target.result);
+                        if (data.orders) localStorage.setItem('orders', JSON.stringify(data.orders));
+                        if (data.menus) localStorage.setItem('menus', JSON.stringify(data.menus));
+                        if (data.sources) localStorage.setItem('sources', JSON.stringify(data.sources));
+                        alert('✓ 불러오기 완료!');
+                        location.reload();
+                    } catch(err) { alert('파일 오류'); }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function deleteAllData() {
+            if (confirm('정말 삭제?') && confirm('복구 불가! 삭제?')) {
+                localStorage.clear();
+                alert('삭제 완료');
+                location.reload();
+            }
+        }
+
+        // ========== 초기화 ==========
+initializeData();
+populateSelects();
+updateCurrentTimestamp();
+setInterval(updateCurrentTimestamp, 1000);
+
+// 서버에서 데이터 불러온 후 화면 갱신
+loadOrdersFromServer().then(() => {
+    renderAll();
+});
+
+    </script>
+</body>
+</html>
+
