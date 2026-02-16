@@ -5,47 +5,200 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#F97316">
     <title>떡집 고객관리 시스템</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
+        /* 기본 리셋 및 Tailwind 대체 스타일 */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         * { -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #FEF3C7; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #FEF3C7; padding-bottom: 80px; }
+        
+        /* 유틸리티 클래스 */
+        .container { width: 100%; margin: 0 auto; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .max-w-4xl { max-width: 896px; }
+        .p-2 { padding: 8px; }
+        .p-3 { padding: 12px; }
+        .p-4 { padding: 16px; }
+        .p-6 { padding: 24px; }
+        .px-2 { padding-left: 8px; padding-right: 8px; }
+        .px-3 { padding-left: 12px; padding-right: 12px; }
+        .px-4 { padding-left: 16px; padding-right: 16px; }
+        .py-1 { padding-top: 4px; padding-bottom: 4px; }
+        .py-2 { padding-top: 8px; padding-bottom: 8px; }
+        .py-3 { padding-top: 12px; padding-bottom: 12px; }
+        .py-4 { padding-top: 16px; padding-bottom: 16px; }
+        .py-5 { padding-top: 20px; padding-bottom: 20px; }
+        .py-8 { padding-top: 32px; padding-bottom: 32px; }
+        .mb-1 { margin-bottom: 4px; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-3 { margin-bottom: 12px; }
+        .mb-4 { margin-bottom: 16px; }
+        .mt-2 { margin-top: 8px; }
+        .mt-3 { margin-top: 12px; }
+        .ml-2 { margin-left: 8px; }
+        .mr-2 { margin-right: 8px; }
+        .gap-2 { gap: 8px; }
+        .gap-3 { gap: 12px; }
+        .gap-4 { gap: 16px; }
+        .gap-8 { gap: 8px; }
+        .gap-10 { gap: 10px; }
+        
+        .flex { display: flex; }
+        .grid { display: grid; }
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-cols-6 { grid-template-columns: repeat(6, 1fr); }
+        .flex-1 { flex: 1; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .flex-col { flex-direction: column; }
+        .overflow-x-auto { overflow-x: auto; }
+        .overflow-y-auto { overflow-y: auto; }
+        .overflow-hidden { overflow: hidden; }
+        .whitespace-nowrap { white-space: nowrap; }
+        .whitespace-pre-wrap { white-space: pre-wrap; }
+        
+        .text-sm { font-size: 14px; }
+        .text-lg { font-size: 18px; }
+        .text-xl { font-size: 20px; }
+        .text-2xl { font-size: 24px; }
+        .font-bold { font-weight: 700; }
+        .font-semibold { font-weight: 600; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
+        
+        .text-white { color: white; }
+        .text-gray-500 { color: #6B7280; }
+        .text-gray-600 { color: #4B5563; }
+        .text-gray-700 { color: #374151; }
+        .text-gray-800 { color: #1F2937; }
+        .text-orange-600 { color: #EA580C; }
+        .text-green-600 { color: #16A34A; }
+        .text-green-700 { color: #15803D; }
+        .text-blue-700 { color: #1D4ED8; }
+        .text-red-500 { color: #EF4444; }
+        .text-red-600 { color: #DC2626; }
+        
+        .bg-white { background: white; }
+        .bg-gray-100 { background: #F3F4F6; }
+        .bg-gray-500 { background: #6B7280; }
+        .bg-gray-700 { background: #374151; }
+        .bg-orange-50 { background: #FFF7ED; }
+        .bg-orange-500 { background: #F97316; }
+        .bg-blue-50 { background: #EFF6FF; }
+        .bg-blue-500 { background: #3B82F6; }
+        .bg-green-50 { background: #F0FDF4; }
+        .bg-green-500 { background: #22C55E; }
+        .bg-red-500 { background: #EF4444; }
+        .bg-yellow-50 { background: #FEFCE8; }
+        
+        .border { border: 1px solid #E5E7EB; }
+        .border-2 { border: 2px solid #E5E7EB; }
+        .border-t { border-top: 1px solid #E5E7EB; }
+        .border-b { border-bottom: 1px solid #E5E7EB; }
+        .border-l-4 { border-left: 4px solid; }
+        .border-gray-300 { border-color: #D1D5DB; }
+        .border-orange-300 { border-color: #FDBA74; }
+        .border-orange-500 { border-color: #F97316; }
+        .border-blue-300 { border-color: #93C5FD; }
+        .border-green-300 { border-color: #86EFAC; }
+        .border-red-500 { border-color: #EF4444; }
+        
+        .rounded { border-radius: 4px; }
+        .rounded-lg { border-radius: 8px; }
+        .rounded-xl { border-radius: 12px; }
+        
+        .shadow-md { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        
+        .w-full { width: 100%; }
+        .w-5 { width: 20px; }
+        .w-10 { width: 40px; }
+        .w-20 { width: 80px; }
+        .h-5 { height: 20px; }
+        
+        .sticky { position: sticky; }
+        .top-0 { top: 0; }
+        .top-16 { top: 64px; }
+        .z-30 { z-index: 30; }
+        .z-40 { z-index: 40; }
+        
+        .cursor-pointer { cursor: pointer; }
+        .opacity-50 { opacity: 0.5; }
+        
+        /* 버튼 기본 스타일 */
+        button { cursor: pointer; border: none; }
+        
+        /* 탭 관련 */
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .nav-tab { transition: all 0.3s ease; }
+        .nav-tab { transition: all 0.3s ease; background: transparent; }
         .nav-tab.active { background: #F97316; color: white; font-weight: 600; }
-        input, select, textarea { font-size: 16px !important; }
+        
+        /* 입력 필드 */
+        input, select, textarea { font-size: 16px !important; border: 2px solid #D1D5DB; border-radius: 8px; padding: 12px; width: 100%; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #F97316; }
+        
+        /* 토글 스위치 */
         .toggle-switch { width: 60px; height: 32px; background: #D1D5DB; border-radius: 16px; position: relative; cursor: pointer; transition: background 0.3s; }
         .toggle-switch.active { background: #10B981; }
         .toggle-switch::after { content: ''; position: absolute; width: 28px; height: 28px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: transform 0.3s; }
         .toggle-switch.active::after { transform: translateX(28px); }
+        
+        /* 통계 카드 */
         .stat-card { background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%); }
+        
+        /* 모달 */
         .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
         .modal.show { display: flex; }
         .modal-content { background: white; border-radius: 12px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; }
+        
+        /* 배지 */
         .badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
         .badge-success { background: #4CAF50; color: white; }
         .badge-danger { background: #f44336; color: white; }
+        
+        /* 바 차트 */
         .bar-chart { display: flex; flex-direction: column; gap: 8px; }
         .bar-item { display: flex; align-items: center; gap: 8px; }
         .bar { height: 24px; background: linear-gradient(90deg, #F97316, #FB923C); border-radius: 4px; }
+        
+        /* 주문 카드 */
         .order-card { background: white; border: 1px solid #E5E7EB; border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
-        .order-card-header { background: #f5f5f5; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; font-size: 14px; color: #666; }
+        .order-card-header { background: #f5f5f5; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; font-size: 14px; color: #666; display: flex; justify-content: space-between; align-items: center; }
         .order-card-body { padding: 16px; }
+        
+        /* 정보 섹션 */
         .info-section { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
         .info-section-title { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; }
+        
+        /* 체크박스 영역 */
         .same-as-orderer-checkbox { background: #dbeafe; border: 2px solid #3b82f6; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
         .same-as-orderer-checkbox input { width: 20px; height: 20px; }
         .same-as-orderer-checkbox label { font-weight: 600; color: #1e40af; cursor: pointer; }
+        
         .disabled-input { background: #e5e7eb !important; color: #6b7280 !important; }
+        
         .section-divider { border-top: 2px solid #e5e7eb; margin: 24px 0 16px 0; padding-top: 16px; }
+        
+        /* 동기화 상태 */
         .sync-status { position: fixed; top: 70px; right: 10px; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; z-index: 100; }
         .sync-success { background: #d1fae5; color: #065f46; }
         .sync-error { background: #fee2e2; color: #991b1b; }
         .sync-loading { background: #e0e7ff; color: #3730a3; }
-        .customer-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        /* 고객 카드 */
+        .customer-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
+        .customer-card:hover { background: #FFF7ED; }
+        
+        /* 필터 섹션 */
         .filter-section { background: #e3f2fd; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        
+        /* 고객 선택 카드 */
         .customer-select-card { background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
         .customer-select-card.selected { background: #e8f5e9; border-color: #4CAF50; }
+        
+        /* 테이블 */
         .table-container { overflow-x: auto; }
         .order-status-table { width: 100%; border-collapse: collapse; }
         .order-status-table th { background: #374151; color: white; padding: 12px 8px; font-size: 14px; text-align: left; }
@@ -56,21 +209,30 @@
         .folder-card { background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
         .folder-card:hover { border-color: #F97316; background: #FFF7ED; }
         .folder-card.active { border-color: #F97316; background: #FFEDD5; }
-        .memo-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+        .memo-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
         .memo-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .folder-icon { font-size: 24px; margin-right: 8px; }
         .memo-preview { color: #6b7280; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .memo-date { color: #9ca3af; font-size: 12px; }
         .back-btn { background: #f3f4f6; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; margin-bottom: 16px; }
         .back-btn:hover { background: #e5e7eb; }
+        .folder-icon-btn { padding: 12px; font-size: 24px; border: 2px solid #e5e7eb; border-radius: 8px; background: white; cursor: pointer; }
+        .folder-icon-btn:hover { background: #FFF7ED; }
+        .folder-icon-btn.selected { border-color: #F97316; background: #FFF7ED; }
+        
+        /* 그라데이션 버튼 */
+        .btn-gradient { background: linear-gradient(to right, #F97316, #EA580C); }
+        
+        /* 체크박스 커스텀 */
+        input[type="checkbox"] { width: 20px; height: 20px; }
     </style>
 </head>
-<body class="pb-20">
+<body>
     <header class="bg-white p-2 shadow-lg sticky top-0 z-30">
-    <div class="flex justify-center">
-        <a href="https://imgbb.com/"><img src="https://i.ibb.co/RTsghxnK/001-8.png" alt="제목을 입력해주세요 001 (8)" border="0"></a>
-    </div>
-</header>
+        <div class="flex justify-center">
+            <img src="https://i.ibb.co/RTsghxnK/001-8.png" alt="로고" style="max-height: 50px;">
+        </div>
+    </header>
 
     <div id="syncStatus" class="sync-status" style="display:none;"></div>
 
@@ -100,17 +262,17 @@
                 <div class="info-section">
                     <div class="info-section-title">👤 주문자 정보</div>
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">전화번호 *</label>
-                        <input type="tel" id="ordererPhone" class="w-full p-4 text-lg border-2 border-orange-300 rounded-lg" placeholder="010-1234-5678" oninput="searchCustomer(this.value); syncIfSameAsOrderer();">
+                        <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">전화번호 *</label>
+                        <input type="tel" id="ordererPhone" style="border-color: #FDBA74;" placeholder="010-1234-5678" oninput="searchCustomer(this.value); syncIfSameAsOrderer();">
                         <div id="customerInfo" class="mt-2"></div>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">이름 *</label>
-                        <input type="text" id="ordererName" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="주문자 이름" oninput="syncIfSameAsOrderer()">
+                        <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">이름 *</label>
+                        <input type="text" id="ordererName" placeholder="주문자 이름" oninput="syncIfSameAsOrderer()">
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">주소</label>
-                        <input type="text" id="ordererAddress" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="주문자 주소" oninput="syncIfSameAsOrderer()">
+                        <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">주소</label>
+                        <input type="text" id="ordererAddress" placeholder="주문자 주소" oninput="syncIfSameAsOrderer()">
                     </div>
                 </div>
 
@@ -121,32 +283,32 @@
                         <label for="sameAsOrderer">주문자와 동일</label>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">이름 *</label>
-                        <input type="text" id="receiverName" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="받는 사람 이름">
+                        <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">이름 *</label>
+                        <input type="text" id="receiverName" placeholder="받는 사람 이름">
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">전화번호 *</label>
-                        <input type="tel" id="receiverPhone" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="010-1234-5678">
+                        <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">전화번호 *</label>
+                        <input type="tel" id="receiverPhone" placeholder="010-1234-5678">
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">배송 주소 *</label>
-                        <input type="text" id="receiverAddress" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="배송받을 주소">
+                        <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">배송 주소 *</label>
+                        <input type="text" id="receiverAddress" placeholder="배송받을 주소">
                     </div>
                 </div>
 
                 <div class="section-divider">
                     <h3 class="text-lg font-semibold text-gray-800 mb-3">📦 주문 정보</h3>
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">유입경로 *</label>
-                        <select id="source" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg"></select>
+                        <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">유입경로 *</label>
+                        <select id="source"></select>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">주문내용 *</label>
-                        <select id="menu" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg"></select>
+                        <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">주문내용 *</label>
+                        <select id="menu"></select>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">주문금액 *</label>
-                        <input type="number" id="amount" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="예: 35000">
+                        <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">주문금액 *</label>
+                        <input type="number" id="amount" placeholder="예: 35000">
                     </div>
                 </div>
 
@@ -154,12 +316,12 @@
                     <h3 class="text-lg font-semibold text-gray-800 mb-3">🚚 배송 정보</h3>
                     <div class="grid grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">배송날짜 *</label>
-                            <input type="date" id="deliveryDate" class="w-full p-4 text-lg border-2 border-orange-300 rounded-lg">
+                            <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">배송날짜 *</label>
+                            <input type="date" id="deliveryDate" style="border-color: #FDBA74;">
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">배송시간 *</label>
-                            <select id="deliveryTime" class="w-full p-4 text-lg border-2 border-orange-300 rounded-lg"></select>
+                            <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">배송시간 *</label>
+                            <select id="deliveryTime" style="border-color: #FDBA74;"></select>
                         </div>
                     </div>
                 </div>
@@ -167,31 +329,30 @@
                 <div class="section-divider">
                     <h3 class="text-lg font-semibold text-gray-800 mb-3">💳 결제 정보</h3>
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">결제여부</label>
+                        <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">결제여부</label>
                         <div class="flex items-center gap-3">
                             <div class="toggle-switch active" id="paymentToggle" onclick="togglePayment()"></div>
                             <span id="paymentLabel" class="text-lg font-semibold text-green-600">완료</span>
                         </div>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">결제수단 *</label>
-                        <select id="paymentMethod" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg"></select>
+                        <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">결제수단 *</label>
+                        <select id="paymentMethod"></select>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">메모</label>
-                        <textarea id="memo" rows="3" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="특이사항"></textarea>
+                        <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">메모</label>
+                        <textarea id="memo" rows="3" placeholder="특이사항"></textarea>
                     </div>
                 </div>
 
-                <button onclick="saveOrder()" class="w-full py-5 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xl font-bold rounded-lg shadow-lg">✅ 주문 저장</button>
+                <button onclick="saveOrder()" class="w-full py-5 btn-gradient text-white text-xl font-bold rounded-lg shadow-lg">✅ 주문 저장</button>
             </div>
         </div>
 
         <!-- 고객 검색 탭 -->
         <div id="tab-customers" class="tab-content">
             <div class="bg-white rounded-xl shadow-lg p-4 mb-4">
-                <input type="text" id="customerSearch" class="w-full p-4 text-lg border-2 border-orange-300 rounded-lg" placeholder="🔍 이름 또는 전화번호" oninput="filterCustomers(this.value)" onkeyup="filterCustomers(this.value)" onchange="filterCustomers(this.value)">
-
+                <input type="text" id="customerSearch" style="border-color: #FDBA74;" placeholder="🔍 이름 또는 전화번호" oninput="filterCustomers(this.value)">
             </div>
             <div id="customerList"></div>
         </div>
@@ -202,7 +363,7 @@
                 <div class="flex justify-between items-center">
                     <h2 class="text-xl font-bold text-orange-600">📅 <span id="todayDate"></span></h2>
                     <label class="flex items-center gap-2">
-                        <input type="checkbox" id="hideCompleted" onchange="renderDeliveries()" class="w-5 h-5">
+                        <input type="checkbox" id="hideCompleted" onchange="renderDeliveries()">
                         <span class="text-sm font-semibold">완료 숨기기</span>
                     </label>
                 </div>
@@ -216,12 +377,12 @@
                 <h2 class="text-xl font-bold text-orange-600 mb-4">📋 주문 조회</h2>
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div>
-                        <label class="block text-sm font-semibold mb-1">시작</label>
-                        <input type="date" id="statusStartDate" class="w-full p-3 border-2 border-gray-300 rounded-lg">
+                        <label class="text-sm font-semibold mb-1" style="display:block;">시작</label>
+                        <input type="date" id="statusStartDate">
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold mb-1">종료</label>
-                        <input type="date" id="statusEndDate" class="w-full p-3 border-2 border-gray-300 rounded-lg">
+                        <label class="text-sm font-semibold mb-1" style="display:block;">종료</label>
+                        <input type="date" id="statusEndDate">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
@@ -264,8 +425,8 @@
             <div class="filter-section">
                 <h2 class="text-xl font-bold mb-4">📱 문자 발송</h2>
                 <div class="mb-3">
-                    <label class="block text-sm font-semibold mb-1">유입경로</label>
-                    <select id="filterSource" class="w-full p-3 border-2 border-gray-300 rounded-lg"><option value="">전체</option></select>
+                    <label class="text-sm font-semibold mb-1" style="display:block;">유입경로</label>
+                    <select id="filterSource"><option value="">전체</option></select>
                 </div>
                 <button onclick="applyMessageFilters()" class="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg">🔍 필터 적용</button>
             </div>
@@ -273,8 +434,8 @@
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="font-bold">선택: <span id="selectedCount">0</span>명</h3>
                     <div class="flex gap-2">
-                        <button onclick="selectAllCustomers()" class="text-sm bg-green-500 text-white px-3 py-1 rounded">전체선택</button>
-                        <button onclick="deselectAllCustomers()" class="text-sm bg-gray-500 text-white px-3 py-1 rounded">해제</button>
+                        <button onclick="selectAllCustomers()" class="text-sm bg-green-500 text-white px-3 py-1 rounded-lg">전체선택</button>
+                        <button onclick="deselectAllCustomers()" class="text-sm bg-gray-500 text-white px-3 py-1 rounded-lg">해제</button>
                     </div>
                 </div>
                 <div id="messageCustomerList"></div>
@@ -337,96 +498,95 @@
                 <button onclick="deleteAllData()" class="w-full py-3 bg-red-500 text-white font-semibold rounded-lg">🗑️ 전체 삭제</button>
             </div>
         </div>
-
-        <!-- 고객 주문이력 모달 -->
-        <div id="customerModal" class="modal" onclick="if(event.target===this)closeCustomerModal()">
-            <div class="modal-content">
-                <div class="bg-orange-500 text-white p-4 flex justify-between items-center">
-                    <h3 class="text-lg font-bold" id="modalCustomerName">고객 주문이력</h3>
-                    <button onclick="closeCustomerModal()" class="text-2xl font-bold">&times;</button>
-                </div>
-                <div class="p-4" id="modalCustomerInfo"></div>
-                <div class="p-4 border-t" id="modalOrderHistory"></div>
-            </div>
-        </div>
-
-        <!-- 폴더 추가 모달 -->
-        <div id="folderModal" class="modal" onclick="if(event.target===this)closeFolderModal()">
-            <div class="modal-content">
-                <div class="bg-orange-500 text-white p-4 flex justify-between items-center">
-                    <h3 class="text-lg font-bold" id="folderModalTitle">새 폴더</h3>
-                    <button onclick="closeFolderModal()" class="text-2xl font-bold">&times;</button>
-                </div>
-                <div class="p-4">
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">폴더 이름</label>
-                        <input type="text" id="folderName" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="폴더 이름 입력">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">아이콘 선택</label>
-                        <div class="grid grid-cols-6 gap-2" id="folderIconSelector">
-                            <button onclick="selectFolderIcon('📁')" class="p-3 text-2xl border-2 rounded-lg folder-icon-btn">📁</button>
-                            <button onclick="selectFolderIcon('📂')" class="p-3 text-2xl border-2 rounded-lg folder-icon-btn">📂</button>
-                            <button onclick="selectFolderIcon('🗂️')" class="p-3 text-2xl border-2 rounded-lg folder-icon-btn">🗂️</button>
-                            <button onclick="selectFolderIcon('📋')" class="p-3 text-2xl border-2 rounded-lg folder-icon-btn">📋</button>
-                            <button onclick="selectFolderIcon('📌')" class="p-3 text-2xl border-2 rounded-lg folder-icon-btn">📌</button>
-                            <button onclick="selectFolderIcon('⭐')" class="p-3 text-2xl border-2 rounded-lg folder-icon-btn">⭐</button>
-                            <button onclick="selectFolderIcon('💼')" class="p-3 text-2xl border-2 rounded-lg folder-icon-btn">💼</button>
-                            <button onclick="selectFolderIcon('🎯')" class="p-3 text-2xl border-2 rounded-lg folder-icon-btn">🎯</button>
-                            <button onclick="selectFolderIcon('💡')" class="p-3 text-2xl border-2 rounded-lg folder-icon-btn">💡</button>
-                            <button onclick="selectFolderIcon('🔖')" class="p-3 text-2xl border-2 rounded-lg folder-icon-btn">🔖</button>
-                            <button onclick="selectFolderIcon('📝')" class="p-3 text-2xl border-2 rounded-lg folder-icon-btn">📝</button>
-                            <button onclick="selectFolderIcon('🍡')" class="p-3 text-2xl border-2 rounded-lg folder-icon-btn">🍡</button>
-                        </div>
-                    </div>
-                    <input type="hidden" id="selectedFolderIcon" value="📁">
-                    <input type="hidden" id="editingFolderId" value="">
-                    <button onclick="saveFolder()" class="w-full py-4 bg-orange-500 text-white text-lg font-bold rounded-lg">저장</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 메모 추가/편집 모달 -->
-        <div id="memoModal" class="modal" onclick="if(event.target===this)closeMemoModal()">
-            <div class="modal-content">
-                <div class="bg-orange-500 text-white p-4 flex justify-between items-center">
-                    <h3 class="text-lg font-bold" id="memoModalTitle">새 메모</h3>
-                    <button onclick="closeMemoModal()" class="text-2xl font-bold">&times;</button>
-                </div>
-                <div class="p-4">
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">제목</label>
-                        <input type="text" id="memoTitle" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="메모 제목">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">내용</label>
-                        <textarea id="memoContent" rows="8" class="w-full p-4 text-lg border-2 border-gray-300 rounded-lg" placeholder="메모 내용을 입력하세요"></textarea>
-                    </div>
-                    <input type="hidden" id="editingMemoId" value="">
-                    <button onclick="saveMemo()" class="w-full py-4 bg-orange-500 text-white text-lg font-bold rounded-lg">저장</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 메모 보기 모달 -->
-        <div id="memoViewModal" class="modal" onclick="if(event.target===this)closeMemoViewModal()">
-            <div class="modal-content">
-                <div class="bg-orange-500 text-white p-4 flex justify-between items-center">
-                    <h3 class="text-lg font-bold" id="memoViewTitle">메모</h3>
-                    <button onclick="closeMemoViewModal()" class="text-2xl font-bold">&times;</button>
-                </div>
-                <div class="p-4">
-                    <div id="memoViewContent" class="mb-4 whitespace-pre-wrap text-gray-700"></div>
-                    <div id="memoViewDate" class="text-sm text-gray-500 mb-4"></div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="editCurrentMemo()" class="py-3 bg-blue-500 text-white font-semibold rounded-lg">✏️ 수정</button>
-                        <button onclick="deleteCurrentMemo()" class="py-3 bg-red-500 text-white font-semibold rounded-lg">🗑️ 삭제</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
     </main>
+
+    <!-- 고객 주문이력 모달 -->
+    <div id="customerModal" class="modal" onclick="if(event.target===this)closeCustomerModal()">
+        <div class="modal-content">
+            <div class="bg-orange-500 text-white p-4 flex justify-between items-center">
+                <h3 class="text-lg font-bold" id="modalCustomerName">고객 주문이력</h3>
+                <button onclick="closeCustomerModal()" class="text-2xl font-bold">&times;</button>
+            </div>
+            <div class="p-4" id="modalCustomerInfo"></div>
+            <div class="p-4 border-t" id="modalOrderHistory"></div>
+        </div>
+    </div>
+
+    <!-- 폴더 추가/수정 모달 -->
+    <div id="folderModal" class="modal" onclick="if(event.target===this)closeFolderModal()">
+        <div class="modal-content">
+            <div class="bg-orange-500 text-white p-4 flex justify-between items-center">
+                <h3 class="text-lg font-bold" id="folderModalTitle">새 폴더</h3>
+                <button onclick="closeFolderModal()" class="text-2xl font-bold">&times;</button>
+            </div>
+            <div class="p-4">
+                <div class="mb-4">
+                    <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">폴더 이름</label>
+                    <input type="text" id="folderNameInput" placeholder="폴더 이름 입력">
+                </div>
+                <div class="mb-4">
+                    <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">아이콘 선택</label>
+                    <div class="grid grid-cols-6 gap-2" id="folderIconSelector">
+                        <button type="button" onclick="selectFolderIcon('📁')" class="folder-icon-btn">📁</button>
+                        <button type="button" onclick="selectFolderIcon('📂')" class="folder-icon-btn">📂</button>
+                        <button type="button" onclick="selectFolderIcon('🗂️')" class="folder-icon-btn">🗂️</button>
+                        <button type="button" onclick="selectFolderIcon('📋')" class="folder-icon-btn">📋</button>
+                        <button type="button" onclick="selectFolderIcon('📌')" class="folder-icon-btn">📌</button>
+                        <button type="button" onclick="selectFolderIcon('⭐')" class="folder-icon-btn">⭐</button>
+                        <button type="button" onclick="selectFolderIcon('💼')" class="folder-icon-btn">💼</button>
+                        <button type="button" onclick="selectFolderIcon('🎯')" class="folder-icon-btn">🎯</button>
+                        <button type="button" onclick="selectFolderIcon('💡')" class="folder-icon-btn">💡</button>
+                        <button type="button" onclick="selectFolderIcon('🔖')" class="folder-icon-btn">🔖</button>
+                        <button type="button" onclick="selectFolderIcon('📝')" class="folder-icon-btn">📝</button>
+                        <button type="button" onclick="selectFolderIcon('🍡')" class="folder-icon-btn">🍡</button>
+                    </div>
+                </div>
+                <input type="hidden" id="selectedFolderIcon" value="📁">
+                <input type="hidden" id="editingFolderId" value="">
+                <button type="button" onclick="saveFolder()" class="w-full py-4 bg-orange-500 text-white text-lg font-bold rounded-lg">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메모 추가/수정 모달 -->
+    <div id="memoModal" class="modal" onclick="if(event.target===this)closeMemoModal()">
+        <div class="modal-content">
+            <div class="bg-orange-500 text-white p-4 flex justify-between items-center">
+                <h3 class="text-lg font-bold" id="memoModalTitle">새 메모</h3>
+                <button onclick="closeMemoModal()" class="text-2xl font-bold">&times;</button>
+            </div>
+            <div class="p-4">
+                <div class="mb-4">
+                    <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">제목</label>
+                    <input type="text" id="memoTitleInput" placeholder="메모 제목">
+                </div>
+                <div class="mb-4">
+                    <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">내용</label>
+                    <textarea id="memoContentInput" rows="8" placeholder="메모 내용을 입력하세요"></textarea>
+                </div>
+                <input type="hidden" id="editingMemoId" value="">
+                <button type="button" onclick="saveMemo()" class="w-full py-4 bg-orange-500 text-white text-lg font-bold rounded-lg">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메모 보기 모달 -->
+    <div id="memoViewModal" class="modal" onclick="if(event.target===this)closeMemoViewModal()">
+        <div class="modal-content">
+            <div class="bg-orange-500 text-white p-4 flex justify-between items-center">
+                <h3 class="text-lg font-bold" id="memoViewTitle">메모</h3>
+                <button onclick="closeMemoViewModal()" class="text-2xl font-bold">&times;</button>
+            </div>
+            <div class="p-4">
+                <div id="memoViewContent" class="mb-4 whitespace-pre-wrap text-gray-700"></div>
+                <div id="memoViewDate" class="text-sm text-gray-500 mb-4"></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="editCurrentMemo()" class="py-3 bg-blue-500 text-white font-semibold rounded-lg">✏️ 수정</button>
+                    <button type="button" onclick="deleteCurrentMemo()" class="py-3 bg-red-500 text-white font-semibold rounded-lg">🗑️ 삭제</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         // ========== Google Sheets 연동 ==========
@@ -590,9 +750,9 @@
             const c = generateCustomers().find(c => c.phone === phone);
             const div = document.getElementById('customerInfo');
             if (phone && c) {
-                div.innerHTML = '<div class="bg-blue-50 border-2 border-blue-300 rounded-lg p-3"><span class="text-blue-700 font-bold">기존 고객: '+c.name+'</span> <button onclick="fillCustomerInfo(\''+phone+'\')" class="ml-2 px-3 py-1 bg-blue-500 text-white rounded text-sm">불러오기</button></div>';
+                div.innerHTML = '<div class="bg-blue-50 border-2" style="border-color:#93C5FD; border-radius:8px; padding:12px;"><span class="text-blue-700 font-bold">기존 고객: '+c.name+'</span> <button onclick="fillCustomerInfo(\''+phone+'\')" style="margin-left:8px; padding:4px 12px; background:#3B82F6; color:white; border-radius:4px; font-size:14px;">불러오기</button></div>';
             } else if (phone) {
-                div.innerHTML = '<div class="bg-green-50 border-2 border-green-300 rounded-lg p-3"><span class="text-green-700 font-bold">✨ 신규 고객</span></div>';
+                div.innerHTML = '<div class="bg-green-50 border-2" style="border-color:#86EFAC; border-radius:8px; padding:12px;"><span class="text-green-700 font-bold">✨ 신규 고객</span></div>';
             } else {
                 div.innerHTML = '';
             }
@@ -708,14 +868,14 @@
         function renderCustomers() {
             const list = generateCustomers().sort((a, b) => b.orderCount - a.orderCount);
             document.getElementById('customerList').innerHTML = list.map(c => 
-                '<div class="customer-card" onclick="showCustomerHistory(\''+c.phone+'\')" style="cursor:pointer;"><div class="text-lg font-bold">'+(c.name||'이름없음')+'</div><div class="text-sm text-gray-600">'+c.phone+'</div><div class="text-sm text-orange-600">주문 '+c.orderCount+'회 · '+c.totalAmount.toLocaleString()+'원</div></div>'
+                '<div class="customer-card" onclick="showCustomerHistory(\''+c.phone+'\')"><div class="text-lg font-bold">'+(c.name||'이름없음')+'</div><div class="text-sm text-gray-600">'+c.phone+'</div><div class="text-sm text-orange-600">주문 '+c.orderCount+'회 · '+c.totalAmount.toLocaleString()+'원</div></div>'
             ).join('') || '<div class="text-center text-gray-500 py-8">고객이 없습니다</div>';
         }
 
         function filterCustomers(q) {
             const list = generateCustomers().filter(c => (c.name || '').includes(q) || (c.phone || '').includes(q));
             document.getElementById('customerList').innerHTML = list.map(c => 
-                '<div class="customer-card" onclick="showCustomerHistory(\''+c.phone+'\')" style="cursor:pointer;"><div class="text-lg font-bold">'+(c.name||'이름없음')+'</div><div class="text-sm text-gray-600">'+(c.phone||'')+'</div><div class="text-sm text-orange-600">주문 '+c.orderCount+'회</div></div>'
+                '<div class="customer-card" onclick="showCustomerHistory(\''+c.phone+'\')"><div class="text-lg font-bold">'+(c.name||'이름없음')+'</div><div class="text-sm text-gray-600">'+(c.phone||'')+'</div><div class="text-sm text-orange-600">주문 '+c.orderCount+'회</div></div>'
             ).join('') || '<div class="text-center text-gray-500 py-8">검색 결과 없음</div>';
         }
 
@@ -783,13 +943,13 @@
             if (hide) orders = orders.filter(o => !done[o.id]);
 
             document.getElementById('deliveryList').innerHTML = orders.length ? orders.map(o => 
-                '<div class="order-card '+(done[o.id]?'opacity-50':'')+' '+(o.paymentStatus==='미완료'?'border-l-4 border-red-500':'')+'">'+
-                '<div class="order-card-header flex justify-between"><span>🚚 '+o.deliveryTime+'</span><label><input type="checkbox" '+(done[o.id]?'checked':'')+' onchange="toggleComplete('+o.id+')"> 완료</label></div>'+
+                '<div class="order-card '+(done[o.id]?'opacity-50':'')+'" style="'+(o.paymentStatus==='미완료'?'border-left:4px solid #EF4444;':'')+'">'+
+                '<div class="order-card-header"><span>🚚 '+o.deliveryTime+'</span><label class="flex items-center gap-2"><input type="checkbox" '+(done[o.id]?'checked':'')+' onchange="toggleComplete('+o.id+')"> 완료</label></div>'+
                 '<div class="order-card-body"><div class="flex justify-between mb-2"><span class="font-bold text-lg">'+o.menu+'</span><span class="font-bold text-orange-600">'+Number(o.amount).toLocaleString()+'원</span></div>'+
                 '<div class="text-sm text-gray-600">📦 '+(o.receiverName||o.name)+' ('+(o.receiverPhone||o.phone)+')</div>'+
                 '<div class="text-sm text-gray-600">📍 '+(o.receiverAddress||o.deliveryAddress)+'</div>'+
                 '<div class="mt-2"><span class="badge '+(o.paymentStatus==='완료'?'badge-success':'badge-danger')+'">'+o.paymentStatus+'</span></div>'+
-                (o.memo?'<div class="mt-2 bg-yellow-50 p-2 rounded text-sm">💬 '+o.memo+'</div>':'')+
+                (o.memo?'<div class="mt-2 bg-yellow-50 p-2 rounded-lg text-sm">💬 '+o.memo+'</div>':'')+
                 '</div></div>'
             ).join('') : '<div class="text-center text-gray-500 py-8">오늘 배송 없음</div>';
         }
@@ -845,8 +1005,8 @@
                     '</div>'+
                     '</div>'+
                     '<div class="flex gap-2">'+
-                    '<button onclick="event.stopPropagation(); editFolder('+f.id+')" class="px-3 py-1 bg-blue-500 text-white text-sm rounded">수정</button>'+
-                    '<button onclick="event.stopPropagation(); deleteFolder('+f.id+')" class="px-3 py-1 bg-red-500 text-white text-sm rounded">삭제</button>'+
+                    '<button onclick="event.stopPropagation(); editFolder('+f.id+')" class="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg">수정</button>'+
+                    '<button onclick="event.stopPropagation(); deleteFolder('+f.id+')" class="px-3 py-1 bg-red-500 text-white text-sm rounded-lg">삭제</button>'+
                     '</div>'+
                     '</div>'+
                     '</div>';
@@ -887,10 +1047,10 @@
 
         function showAddFolderModal() {
             document.getElementById('folderModalTitle').textContent = '새 폴더';
-            document.getElementById('folderName').value = '';
+            document.getElementById('folderNameInput').value = '';
             document.getElementById('selectedFolderIcon').value = '📁';
             document.getElementById('editingFolderId').value = '';
-            document.querySelectorAll('.folder-icon-btn').forEach(btn => btn.classList.remove('border-orange-500', 'bg-orange-100'));
+            document.querySelectorAll('.folder-icon-btn').forEach(btn => btn.classList.remove('selected'));
             document.getElementById('folderModal').classList.add('show');
         }
 
@@ -899,14 +1059,14 @@
             if (!folder) return;
             
             document.getElementById('folderModalTitle').textContent = '폴더 수정';
-            document.getElementById('folderName').value = folder.name;
+            document.getElementById('folderNameInput').value = folder.name;
             document.getElementById('selectedFolderIcon').value = folder.icon;
             document.getElementById('editingFolderId').value = folderId;
             document.querySelectorAll('.folder-icon-btn').forEach(btn => {
-                if (btn.textContent === folder.icon) {
-                    btn.classList.add('border-orange-500', 'bg-orange-100');
+                if (btn.textContent.trim() === folder.icon) {
+                    btn.classList.add('selected');
                 } else {
-                    btn.classList.remove('border-orange-500', 'bg-orange-100');
+                    btn.classList.remove('selected');
                 }
             });
             document.getElementById('folderModal').classList.add('show');
@@ -919,16 +1079,16 @@
         function selectFolderIcon(icon) {
             document.getElementById('selectedFolderIcon').value = icon;
             document.querySelectorAll('.folder-icon-btn').forEach(btn => {
-                if (btn.textContent === icon) {
-                    btn.classList.add('border-orange-500', 'bg-orange-100');
+                if (btn.textContent.trim() === icon) {
+                    btn.classList.add('selected');
                 } else {
-                    btn.classList.remove('border-orange-500', 'bg-orange-100');
+                    btn.classList.remove('selected');
                 }
             });
         }
 
         function saveFolder() {
-            const name = document.getElementById('folderName').value.trim();
+            const name = document.getElementById('folderNameInput').value.trim();
             const icon = document.getElementById('selectedFolderIcon').value;
             const editingId = document.getElementById('editingFolderId').value;
             
@@ -953,6 +1113,7 @@
             localStorage.setItem('memoFolders', JSON.stringify(folders));
             closeFolderModal();
             renderMemoFolders();
+            alert('✅ 폴더가 저장되었습니다!');
         }
 
         function deleteFolder(folderId) {
@@ -973,8 +1134,8 @@
 
         function showAddMemoModal() {
             document.getElementById('memoModalTitle').textContent = '새 메모';
-            document.getElementById('memoTitle').value = '';
-            document.getElementById('memoContent').value = '';
+            document.getElementById('memoTitleInput').value = '';
+            document.getElementById('memoContentInput').value = '';
             document.getElementById('editingMemoId').value = '';
             document.getElementById('memoModal').classList.add('show');
         }
@@ -984,8 +1145,8 @@
         }
 
         function saveMemo() {
-            const title = document.getElementById('memoTitle').value.trim();
-            const content = document.getElementById('memoContent').value.trim();
+            const title = document.getElementById('memoTitleInput').value.trim();
+            const content = document.getElementById('memoContentInput').value.trim();
             const editingId = document.getElementById('editingMemoId').value;
             
             if (!title) { alert('제목을 입력하세요'); return; }
@@ -1014,6 +1175,7 @@
             localStorage.setItem('memos', JSON.stringify(memos));
             closeMemoModal();
             renderMemos();
+            alert('✅ 메모가 저장되었습니다!');
         }
 
         function viewMemo(memoId) {
@@ -1038,8 +1200,8 @@
             
             closeMemoViewModal();
             document.getElementById('memoModalTitle').textContent = '메모 수정';
-            document.getElementById('memoTitle').value = memo.title;
-            document.getElementById('memoContent').value = memo.content;
+            document.getElementById('memoTitleInput').value = memo.title;
+            document.getElementById('memoContentInput').value = memo.content;
             document.getElementById('editingMemoId').value = memo.id;
             document.getElementById('memoModal').classList.add('show');
         }
