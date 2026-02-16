@@ -683,7 +683,6 @@
 
         function populateSelects() {
             const menus = getMenus(), sources = getSources(), times = getDeliveryTimes(), methods = getPaymentMethods();
-            document.getElementById('menu').innerHTML = '<option value="">선택</option>' + menus.map(m => '<option value="'+m+'">'+m+'</option>').join('');
             document.getElementById('source').innerHTML = '<option value="">선택</option>' + sources.map(s => '<option value="'+s+'">'+s+'</option>').join('');
             document.getElementById('deliveryTime').innerHTML = '<option value="">선택</option>' + times.map(t => '<option value="'+t+'">'+t+'</option>').join('');
             document.getElementById('paymentMethod').innerHTML = '<option value="">선택</option>' + methods.map(m => '<option value="'+m+'">'+m+'</option>').join('');
@@ -1354,5 +1353,6 @@
     </script>
 </body>
 </html>
+
 
 
