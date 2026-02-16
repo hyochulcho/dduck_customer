@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#F97316">
     <title>떡집 고객관리 시스템</title>
     <style>
-        /* 기본 리셋 및 Tailwind 대체 스타일 */
+        /* 기본 리셋 및 스타일 */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         * { -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #FEF3C7; padding-bottom: 80px; }
@@ -39,8 +39,6 @@
         .gap-2 { gap: 8px; }
         .gap-3 { gap: 12px; }
         .gap-4 { gap: 16px; }
-        .gap-8 { gap: 8px; }
-        .gap-10 { gap: 10px; }
         
         .flex { display: flex; }
         .grid { display: grid; }
@@ -126,53 +124,42 @@
         .cursor-pointer { cursor: pointer; }
         .opacity-50 { opacity: 0.5; }
         
-        /* 버튼 기본 스타일 */
         button { cursor: pointer; border: none; }
         
-        /* 탭 관련 */
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .nav-tab { transition: all 0.3s ease; background: transparent; }
         .nav-tab.active { background: #F97316; color: white; font-weight: 600; }
         
-        /* 입력 필드 */
         input, select, textarea { font-size: 16px !important; border: 2px solid #D1D5DB; border-radius: 8px; padding: 12px; width: 100%; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #F97316; }
         
-        /* 토글 스위치 */
         .toggle-switch { width: 60px; height: 32px; background: #D1D5DB; border-radius: 16px; position: relative; cursor: pointer; transition: background 0.3s; }
         .toggle-switch.active { background: #10B981; }
         .toggle-switch::after { content: ''; position: absolute; width: 28px; height: 28px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: transform 0.3s; }
         .toggle-switch.active::after { transform: translateX(28px); }
         
-        /* 통계 카드 */
         .stat-card { background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%); }
         
-        /* 모달 */
         .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
         .modal.show { display: flex; }
         .modal-content { background: white; border-radius: 12px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; }
         
-        /* 배지 */
         .badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
         .badge-success { background: #4CAF50; color: white; }
         .badge-danger { background: #f44336; color: white; }
         
-        /* 바 차트 */
         .bar-chart { display: flex; flex-direction: column; gap: 8px; }
         .bar-item { display: flex; align-items: center; gap: 8px; }
         .bar { height: 24px; background: linear-gradient(90deg, #F97316, #FB923C); border-radius: 4px; }
         
-        /* 주문 카드 */
         .order-card { background: white; border: 1px solid #E5E7EB; border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
         .order-card-header { background: #f5f5f5; padding: 12px 16px; border-bottom: 1px solid #E5E7EB; font-size: 14px; color: #666; display: flex; justify-content: space-between; align-items: center; }
         .order-card-body { padding: 16px; }
         
-        /* 정보 섹션 */
         .info-section { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
         .info-section-title { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; }
         
-        /* 체크박스 영역 */
         .same-as-orderer-checkbox { background: #dbeafe; border: 2px solid #3b82f6; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
         .same-as-orderer-checkbox input { width: 20px; height: 20px; }
         .same-as-orderer-checkbox label { font-weight: 600; color: #1e40af; cursor: pointer; }
@@ -181,34 +168,27 @@
         
         .section-divider { border-top: 2px solid #e5e7eb; margin: 24px 0 16px 0; padding-top: 16px; }
         
-        /* 동기화 상태 */
         .sync-status { position: fixed; top: 70px; right: 10px; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; z-index: 100; }
         .sync-success { background: #d1fae5; color: #065f46; }
         .sync-error { background: #fee2e2; color: #991b1b; }
         .sync-loading { background: #e0e7ff; color: #3730a3; }
         
-        /* 고객 카드 */
         .customer-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
         .customer-card:hover { background: #FFF7ED; }
         
-        /* 필터 섹션 */
         .filter-section { background: #e3f2fd; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
         
-        /* 고객 선택 카드 */
         .customer-select-card { background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
         .customer-select-card.selected { background: #e8f5e9; border-color: #4CAF50; }
         
-        /* 테이블 */
         .table-container { overflow-x: auto; }
         .order-status-table { width: 100%; border-collapse: collapse; }
         .order-status-table th { background: #374151; color: white; padding: 12px 8px; font-size: 14px; text-align: left; }
         .order-status-table td { padding: 12px 8px; font-size: 14px; border-bottom: 1px solid #E5E7EB; }
         .order-status-table tbody tr:hover { background: #FEF3C7; }
         
-        /* 메모장 스타일 */
         .folder-card { background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
         .folder-card:hover { border-color: #F97316; background: #FFF7ED; }
-        .folder-card.active { border-color: #F97316; background: #FFEDD5; }
         .memo-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
         .memo-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .folder-icon { font-size: 24px; margin-right: 8px; }
@@ -220,10 +200,8 @@
         .folder-icon-btn:hover { background: #FFF7ED; }
         .folder-icon-btn.selected { border-color: #F97316; background: #FFF7ED; }
         
-        /* 그라데이션 버튼 */
         .btn-gradient { background: linear-gradient(to right, #F97316, #EA580C); }
         
-        /* 체크박스 커스텀 */
         input[type="checkbox"] { width: 20px; height: 20px; }
     </style>
 </head>
@@ -242,8 +220,8 @@
             <button class="nav-tab flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('customers', this)">👥 고객검색</button>
             <button class="nav-tab flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('delivery', this)">🚚 오늘배송</button>
             <button class="nav-tab flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('status', this)">📋 주문현황</button>
-            <button class="nav-tab flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('message', this)">💬 문자</button>
             <button class="nav-tab flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('memo', this)">📒 메모장</button>
+            <button class="nav-tab flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('message', this)">💬 문자</button>
             <button class="nav-tab flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('stats', this)">📊 통계</button>
             <button class="nav-tab flex-1 py-3 px-2 text-sm whitespace-nowrap" onclick="switchTab('settings', this)">⚙️ 설정</button>
         </div>
@@ -303,11 +281,8 @@
                         <select id="source"></select>
                     </div>
                     <div class="mb-4">
-                        <div class="mb-4">
-                         <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">주문내용 *</label>
-                         <textarea id="menu" rows="3" placeholder="예: 인절미 2kg, 송편 30개"></textarea>
-                        </div>
-
+                        <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">주문내용 *</label>
+                        <textarea id="menu" rows="3" placeholder="예: 인절미 2kg, 송편 30개, 백설기 1판"></textarea>
                     </div>
                     <div class="mb-4">
                         <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">주문금액 *</label>
@@ -344,7 +319,7 @@
                     </div>
                     <div class="mb-4">
                         <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">메모</label>
-                        <textarea id="memo" rows="3" placeholder="특이사항"></textarea>
+                        <textarea id="orderMemo" rows="3" placeholder="특이사항"></textarea>
                     </div>
                 </div>
 
@@ -484,11 +459,6 @@
                 <button onclick="syncAllToServer()" class="w-full py-3 bg-green-500 text-white font-semibold rounded-lg">📤 서버로 전체 업로드</button>
             </div>
             <div class="bg-white rounded-xl shadow-lg p-6 mb-4">
-                <h3 class="text-lg font-bold mb-4">🍡 메뉴 관리</h3>
-                <div id="menuList" class="mb-3"></div>
-                <button onclick="addMenu()" class="w-full py-3 bg-orange-500 text-white font-semibold rounded-lg">+ 메뉴 추가</button>
-            </div>
-            <div class="bg-white rounded-xl shadow-lg p-6 mb-4">
                 <h3 class="text-lg font-bold mb-4">📍 유입경로 관리</h3>
                 <div id="sourceList" class="mb-3"></div>
                 <button onclick="addSource()" class="w-full py-3 bg-orange-500 text-white font-semibold rounded-lg">+ 경로 추가</button>
@@ -592,7 +562,6 @@
     </div>
 
     <script>
-        // ========== Google Sheets 연동 ==========
         const API_URL = 'https://script.google.com/macros/s/AKfycbw2x_5ja-iMSN4SNYTMYHLLlf8nT8DdGiaLiqoBPcXYCEXtnLEXkdJ9q8cab8iu6SgJ/exec';
 
         let currentStatusOrders = [];
@@ -655,9 +624,7 @@
             alert('✓ ' + count + '건 업로드 완료!');
         }
 
-        // ========== 기본 함수 ==========
         function getOrders() { return JSON.parse(localStorage.getItem('orders') || '[]'); }
-        function getMenus() { return JSON.parse(localStorage.getItem('menus') || '[]'); }
         function getSources() { return JSON.parse(localStorage.getItem('sources') || '[]'); }
         function getDeliveryTimes() { return JSON.parse(localStorage.getItem('deliveryTimes') || '[]'); }
         function getPaymentMethods() { return JSON.parse(localStorage.getItem('paymentMethods') || '[]'); }
@@ -665,7 +632,6 @@
         function getMemos() { return JSON.parse(localStorage.getItem('memos') || '[]'); }
 
         function initializeData() {
-            if (!localStorage.getItem('menus')) localStorage.setItem('menus', JSON.stringify(['인절미', '송편', '절편', '가래떡', '꿀떡', '백설기']));
             if (!localStorage.getItem('sources')) localStorage.setItem('sources', JSON.stringify(['지인소개', '당근', '네이버', '인스타그램', '기존고객']));
             if (!localStorage.getItem('deliveryTimes')) {
                 const times = [];
@@ -682,7 +648,7 @@
         }
 
         function populateSelects() {
-            const menus = getMenus(), sources = getSources(), times = getDeliveryTimes(), methods = getPaymentMethods();
+            const sources = getSources(), times = getDeliveryTimes(), methods = getPaymentMethods();
             document.getElementById('source').innerHTML = '<option value="">선택</option>' + sources.map(s => '<option value="'+s+'">'+s+'</option>').join('');
             document.getElementById('deliveryTime').innerHTML = '<option value="">선택</option>' + times.map(t => '<option value="'+t+'">'+t+'</option>').join('');
             document.getElementById('paymentMethod').innerHTML = '<option value="">선택</option>' + methods.map(m => '<option value="'+m+'">'+m+'</option>').join('');
@@ -701,7 +667,6 @@
             if (el) el.textContent = now.toLocaleString('ko-KR');
         }
 
-        // ========== 체크박스 ==========
         function toggleSameAsOrderer() {
             const cb = document.getElementById('sameAsOrderer');
             const rn = document.getElementById('receiverName');
@@ -732,7 +697,6 @@
             }
         }
 
-        // ========== 고객 ==========
         function generateCustomers() {
             const orders = getOrders();
             const customers = {};
@@ -769,7 +733,6 @@
             }
         }
 
-        // ========== 탭 ==========
         function switchTab(tab, btn) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -787,7 +750,6 @@
             renderMemoFolders();
         }
 
-        // ========== 결제 토글 ==========
         function togglePayment() {
             const t = document.getElementById('paymentToggle');
             const l = document.getElementById('paymentLabel');
@@ -801,7 +763,6 @@
             }
         }
 
-        // ========== 주문 저장 ==========
         function saveOrder() {
             const ordererPhone = document.getElementById('ordererPhone').value;
             const ordererName = document.getElementById('ordererName').value;
@@ -834,7 +795,7 @@
                 paymentStatus: document.getElementById('paymentToggle').classList.contains('active') ? '완료' : '미완료',
                 paymentMethod: document.getElementById('paymentMethod').value,
                 source: document.getElementById('source').value,
-                memo: document.getElementById('memo').value
+                memo: document.getElementById('orderMemo').value
             };
 
             const orders = getOrders();
@@ -853,8 +814,9 @@
             document.getElementById('receiverName').value = '';
             document.getElementById('receiverPhone').value = '';
             document.getElementById('receiverAddress').value = '';
+            document.getElementById('menu').value = '';
             document.getElementById('amount').value = '';
-            document.getElementById('memo').value = '';
+            document.getElementById('orderMemo').value = '';
             document.getElementById('customerInfo').innerHTML = '';
             document.getElementById('sameAsOrderer').checked = false;
             document.getElementById('receiverName').disabled = false;
@@ -866,7 +828,6 @@
             populateSelects();
         }
 
-        // ========== 고객 목록 ==========
         function renderCustomers() {
             const list = generateCustomers().sort((a, b) => b.orderCount - a.orderCount);
             document.getElementById('customerList').innerHTML = list.map(c => 
@@ -934,7 +895,6 @@
             showSyncStatus('✓ 삭제 완료!', 'success');
         }
 
-        // ========== 오늘 배송 ==========
         function renderDeliveries() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('todayDate').textContent = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' });
@@ -963,7 +923,6 @@
             renderDeliveries();
         }
 
-        // ========== 주문 현황 ==========
         function loadOrderStatus() {
             const s = document.getElementById('statusStartDate').value;
             const e = document.getElementById('statusEndDate').value;
@@ -990,7 +949,7 @@
                 '</tbody></table>' : '<div class="text-center text-gray-500 py-8">주문 없음</div>';
         }
 
-        // ========== 메모장 기능 ==========
+        // 메모장 기능
         function renderMemoFolders() {
             const folders = getMemoFolders();
             const memos = getMemos();
@@ -1217,7 +1176,6 @@
             renderMemos();
         }
 
-        // ========== 통계 ==========
         function renderStats() {
             const orders = getOrders();
             const total = orders.reduce((s, o) => s + (Number(o.amount)||0), 0);
@@ -1226,13 +1184,8 @@
             document.getElementById('statPaid').textContent = orders.filter(o => o.paymentStatus === '완료').length;
             document.getElementById('statUnpaid').textContent = orders.filter(o => o.paymentStatus === '미완료').length;
 
-            const mc = {};
-            orders.forEach(o => mc[o.menu] = (mc[o.menu]||0) + 1);
-            const tm = Object.entries(mc).sort((a,b) => b[1]-a[1]).slice(0, 5);
-            const mm = tm[0]?.[1] || 1;
-            document.getElementById('menuChart').innerHTML = tm.map(([m,c]) => 
-                '<div class="bar-item"><div class="w-20 text-sm">'+m+'</div><div class="flex-1"><div class="bar" style="width:'+(c/mm*100)+'%"></div></div><div class="w-10 text-right">'+c+'</div></div>'
-            ).join('') || '<div class="text-gray-500">데이터 없음</div>';
+            // 주문내용이 직접입력이라 통계는 간단히 처리
+            document.getElementById('menuChart').innerHTML = '<div class="text-gray-500">주문내용 직접입력 방식으로 통계 미지원</div>';
 
             const sc = {};
             orders.forEach(o => { if(o.source) sc[o.source] = (sc[o.source]||0) + 1; });
@@ -1243,7 +1196,6 @@
             ).join('') || '<div class="text-gray-500">데이터 없음</div>';
         }
 
-        // ========== 문자 ==========
         function renderMessageTab() { applyMessageFilters(); }
         
         function applyMessageFilters() {
@@ -1279,23 +1231,12 @@
             navigator.clipboard.writeText(Array.from(selectedCustomers).join(',')).then(() => alert('✓ 복사 완료!'));
         }
 
-        // ========== 설정 ==========
         function renderSettings() {
-            document.getElementById('menuList').innerHTML = getMenus().map((m,i) => 
-                '<div class="flex justify-between items-center p-3 bg-orange-50 rounded-lg mb-2"><span>'+m+'</span><button onclick="deleteMenu('+i+')" class="text-red-500 font-bold">삭제</button></div>'
-            ).join('');
             document.getElementById('sourceList').innerHTML = getSources().map((s,i) => 
                 '<div class="flex justify-between items-center p-3 bg-orange-50 rounded-lg mb-2"><span>'+s+'</span><button onclick="deleteSource('+i+')" class="text-red-500 font-bold">삭제</button></div>'
             ).join('');
         }
 
-        function addMenu() {
-            const n = prompt('새 메뉴:');
-            if (n) { const m = getMenus(); m.push(n); localStorage.setItem('menus', JSON.stringify(m)); populateSelects(); renderSettings(); }
-        }
-        function deleteMenu(i) {
-            if (confirm('삭제?')) { const m = getMenus(); m.splice(i,1); localStorage.setItem('menus', JSON.stringify(m)); populateSelects(); renderSettings(); }
-        }
         function addSource() {
             const n = prompt('새 경로:');
             if (n) { const s = getSources(); s.push(n); localStorage.setItem('sources', JSON.stringify(s)); populateSelects(); renderSettings(); }
@@ -1305,7 +1246,7 @@
         }
 
         function backupData() {
-            const data = { orders: getOrders(), menus: getMenus(), sources: getSources(), memoFolders: getMemoFolders(), memos: getMemos() };
+            const data = { orders: getOrders(), sources: getSources(), memoFolders: getMemoFolders(), memos: getMemos() };
             const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
@@ -1321,7 +1262,6 @@
                     try {
                         const data = JSON.parse(ev.target.result);
                         if (data.orders) localStorage.setItem('orders', JSON.stringify(data.orders));
-                        if (data.menus) localStorage.setItem('menus', JSON.stringify(data.menus));
                         if (data.sources) localStorage.setItem('sources', JSON.stringify(data.sources));
                         if (data.memoFolders) localStorage.setItem('memoFolders', JSON.stringify(data.memoFolders));
                         if (data.memos) localStorage.setItem('memos', JSON.stringify(data.memos));
@@ -1341,7 +1281,7 @@
             }
         }
 
-        // ========== 초기화 ==========
+        // 초기화
         initializeData();
         populateSelects();
         updateCurrentTimestamp();
@@ -1353,6 +1293,3 @@
     </script>
 </body>
 </html>
-
-
-
