@@ -41,6 +41,7 @@
         .flex { display: flex; }
         .grid { display: grid; }
         .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
         .grid-cols-6 { grid-template-columns: repeat(6, 1fr); }
         .flex-1 { flex: 1; }
         .items-center { align-items: center; }
@@ -247,7 +248,8 @@
                     </div>
                     <div class="mb-4">
                         <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">이름 *</label>
-                        <input type="text" id="ordererName" placeholder="주문자 이름" oninput="syncIfSameAsOrderer()">
+                        <input type="text" id="ordererName" placeholder="주문자 이름" oninput="searchCustomerByName(this.value); syncIfSameAsOrderer();">
+                        <div id="customerInfoByName" class="mt-2"></div>
                     </div>
                     <div class="mb-4">
                         <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">주소</label>
@@ -491,19 +493,24 @@
             </div>
             <div class="p-4">
                 <div class="mb-4">
-                    <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">이름</label>
+                    <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">이름 *</label>
                     <input type="text" id="editCustomerName" placeholder="고객 이름">
                 </div>
                 <div class="mb-4">
-                    <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">전화번호</label>
+                    <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">전화번호 *</label>
                     <input type="tel" id="editCustomerPhone" placeholder="010-1234-5678">
                 </div>
                 <div class="mb-4">
                     <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">주소</label>
                     <input type="text" id="editCustomerAddress" placeholder="고객 주소">
                 </div>
+                <div class="mb-4">
+                    <label class="text-sm font-semibold text-gray-700 mb-2" style="display:block;">메모</label>
+                    <textarea id="editCustomerMemo" rows="2" placeholder="고객 메모"></textarea>
+                </div>
                 <input type="hidden" id="editCustomerOriginalPhone" value="">
-                <button type="button" onclick="saveCustomerEdit()" class="w-full py-4 bg-blue-500 text-white text-lg font-bold rounded-lg">💾 저장</button>
+                <button type="button" onclick="saveCustomerEdit()" class="w-full py-4 bg-blue-500 text-white text-lg font-bold rounded-lg mb-2">💾 저장</button>
+                <button type="button" onclick="goToOrderFromCustomer()" class="w-full py-4 bg-orange-500 text-white text-lg font-bold rounded-lg">📝 이 고객으로 주문입력</button>
             </div>
         </div>
     </div>
@@ -585,7 +592,6 @@
     </div>
 
     <script>
-        // ★★★ 새 Apps Script URL ★★★
         const API_URL = 'https://script.google.com/macros/s/AKfycbz29HGailWot_sUhPeAINbrQzA5-21buQyW1QXO5OEcdMRu3sGdK56vEnC31ACdIpU3WA/exec';
 
         let currentStatusOrders = [];
@@ -776,14 +782,16 @@
                 const phone = String(o.ordererPhone || o.phone || '');
                 if (!phone) return;
                 const name = String(o.ordererName || o.name || '');
-                if (!customers[phone]) customers[phone] = { phone, name, orderCount: 0, totalAmount: 0, lastAddress: '' };
+                if (!customers[phone]) customers[phone] = { phone, name, orderCount: 0, totalAmount: 0, lastAddress: '', lastMemo: '' };
                 customers[phone].orderCount++;
                 customers[phone].totalAmount += Number(o.amount) || 0;
-                customers[phone].lastAddress = String(o.ordererAddress || o.address || '');
+                customers[phone].lastAddress = String(o.ordererAddress || o.address || customers[phone].lastAddress || '');
+                if (o.memo) customers[phone].lastMemo = o.memo;
             });
             return Object.values(customers);
         }
 
+        // 전화번호로 고객 검색
         function searchCustomer(phone) {
             const c = generateCustomers().find(c => c.phone === phone);
             const div = document.getElementById('customerInfo');
@@ -796,6 +804,28 @@
             }
         }
 
+        // 이름으로 고객 검색
+        function searchCustomerByName(name) {
+            if (!name || name.length < 2) {
+                document.getElementById('customerInfoByName').innerHTML = '';
+                return;
+            }
+            const customers = generateCustomers();
+            const found = customers.filter(c => c.name && c.name.includes(name));
+            const div = document.getElementById('customerInfoByName');
+            
+            if (found.length > 0) {
+                div.innerHTML = found.slice(0, 3).map(c => 
+                    '<div class="bg-blue-50 border-2" style="border-color:#93C5FD; border-radius:8px; padding:12px; margin-bottom:8px;">' +
+                    '<span class="text-blue-700 font-bold">기존 고객: ' + c.name + ' (' + c.phone + ')</span> ' +
+                    '<button onclick="fillCustomerInfoFull(\'' + c.phone + '\')" style="margin-left:8px; padding:4px 12px; background:#3B82F6; color:white; border-radius:4px; font-size:14px;">불러오기</button>' +
+                    '</div>'
+                ).join('');
+            } else {
+                div.innerHTML = '<div class="bg-green-50 border-2" style="border-color:#86EFAC; border-radius:8px; padding:12px;"><span class="text-green-700 font-bold">✨ 신규 고객</span></div>';
+            }
+        }
+
         function fillCustomerInfo(phone) {
             const c = generateCustomers().find(c => c.phone === phone);
             if (c) {
@@ -803,6 +833,41 @@
                 document.getElementById('ordererAddress').value = c.lastAddress || '';
                 syncIfSameAsOrderer();
             }
+        }
+
+        function fillCustomerInfoFull(phone) {
+            const c = generateCustomers().find(c => c.phone === phone);
+            if (c) {
+                document.getElementById('ordererPhone').value = c.phone || '';
+                document.getElementById('ordererName').value = c.name || '';
+                document.getElementById('ordererAddress').value = c.lastAddress || '';
+                document.getElementById('customerInfo').innerHTML = '<div class="bg-blue-50 border-2" style="border-color:#93C5FD; border-radius:8px; padding:12px;"><span class="text-blue-700 font-bold">✓ ' + c.name + ' 고객 정보 불러옴</span></div>';
+                document.getElementById('customerInfoByName').innerHTML = '';
+                syncIfSameAsOrderer();
+            }
+        }
+
+        // 고객 정보에서 바로 주문입력으로 이동
+        function goToOrderFromCustomer() {
+            const phone = document.getElementById('editCustomerPhone').value;
+            const name = document.getElementById('editCustomerName').value;
+            const address = document.getElementById('editCustomerAddress').value;
+            
+            closeEditCustomerModal();
+            closeCustomerModal();
+            
+            // 주문입력 탭으로 이동
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-order').classList.add('active');
+            document.querySelector('.nav-tab').classList.add('active');
+            
+            // 고객 정보 채우기
+            document.getElementById('ordererPhone').value = phone;
+            document.getElementById('ordererName').value = name;
+            document.getElementById('ordererAddress').value = address;
+            document.getElementById('customerInfo').innerHTML = '<div class="bg-blue-50 border-2" style="border-color:#93C5FD; border-radius:8px; padding:12px;"><span class="text-blue-700 font-bold">✓ ' + name + ' 고객 정보 불러옴</span></div>';
+            document.getElementById('customerInfoByName').innerHTML = '';
         }
 
         function switchTab(tab, btn) {
@@ -890,6 +955,7 @@
             document.getElementById('amount').value = '';
             document.getElementById('orderMemo').value = '';
             document.getElementById('customerInfo').innerHTML = '';
+            document.getElementById('customerInfoByName').innerHTML = '';
             document.getElementById('sameAsOrderer').checked = false;
             document.getElementById('receiverName').disabled = false;
             document.getElementById('receiverPhone').disabled = false;
@@ -930,9 +996,10 @@
                 '<div class="text-gray-600">' + (customer.lastAddress || '주소 없음') + '</div>' +
                 '<div class="text-orange-600 font-semibold mt-2">총 ' + customer.orderCount + '회 주문 · ' + customer.totalAmount.toLocaleString() + '원</div>' +
                 '</div>' +
-                '<div class="grid grid-cols-2 gap-2 mt-3">' +
-                '<button onclick="openEditCustomerModal(\'' + phone + '\')" class="py-2 bg-blue-500 text-white font-semibold rounded-lg">✏️ 정보 수정</button>' +
-                '<button onclick="deleteCustomer(\'' + phone + '\')" class="py-2 bg-red-500 text-white font-semibold rounded-lg">🗑️ 삭제</button>' +
+                '<div class="grid grid-cols-3 gap-2 mt-3">' +
+                '<button onclick="openEditCustomerModal(\'' + phone + '\')" class="py-2 bg-blue-500 text-white font-semibold rounded-lg text-sm">✏️ 정보수정</button>' +
+                '<button onclick="goToOrderFromHistory(\'' + phone + '\')" class="py-2 bg-orange-500 text-white font-semibold rounded-lg text-sm">📝 주문입력</button>' +
+                '<button onclick="deleteCustomer(\'' + phone + '\')" class="py-2 bg-red-500 text-white font-semibold rounded-lg text-sm">🗑️ 삭제</button>' +
                 '</div>';
             
             document.getElementById('modalOrderHistory').innerHTML = orders.length ? 
@@ -949,6 +1016,27 @@
             document.getElementById('customerModal').classList.add('show');
         }
 
+        // 고객 이력에서 바로 주문입력으로 이동
+        function goToOrderFromHistory(phone) {
+            const customer = generateCustomers().find(c => c.phone === phone);
+            if (!customer) return;
+            
+            closeCustomerModal();
+            
+            // 주문입력 탭으로 이동
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-order').classList.add('active');
+            document.querySelector('.nav-tab').classList.add('active');
+            
+            // 고객 정보 채우기
+            document.getElementById('ordererPhone').value = customer.phone;
+            document.getElementById('ordererName').value = customer.name;
+            document.getElementById('ordererAddress').value = customer.lastAddress || '';
+            document.getElementById('customerInfo').innerHTML = '<div class="bg-blue-50 border-2" style="border-color:#93C5FD; border-radius:8px; padding:12px;"><span class="text-blue-700 font-bold">✓ ' + customer.name + ' 고객 정보 불러옴</span></div>';
+            document.getElementById('customerInfoByName').innerHTML = '';
+        }
+
         function closeCustomerModal() {
             document.getElementById('customerModal').classList.remove('show');
             currentViewingCustomerPhone = null;
@@ -959,9 +1047,14 @@
             const customer = generateCustomers().find(c => c.phone === phone);
             if (!customer) return;
             
+            // 해당 고객의 최신 주문에서 메모 가져오기
+            const orders = getOrders().filter(o => String(o.ordererPhone || o.phone) === phone);
+            const latestOrder = orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))[0];
+            
             document.getElementById('editCustomerName').value = customer.name || '';
             document.getElementById('editCustomerPhone').value = customer.phone || '';
             document.getElementById('editCustomerAddress').value = customer.lastAddress || '';
+            document.getElementById('editCustomerMemo').value = latestOrder?.memo || '';
             document.getElementById('editCustomerOriginalPhone').value = phone;
             
             document.getElementById('editCustomerModal').classList.add('show');
@@ -976,6 +1069,7 @@
             const newName = document.getElementById('editCustomerName').value.trim();
             const newPhone = document.getElementById('editCustomerPhone').value.trim();
             const newAddress = document.getElementById('editCustomerAddress').value.trim();
+            const newMemo = document.getElementById('editCustomerMemo').value.trim();
             
             if (!newName || !newPhone) {
                 alert('이름과 전화번호는 필수입니다.');
@@ -985,6 +1079,7 @@
             let orders = getOrders();
             let updated = false;
             
+            // 해당 고객의 모든 주문 정보 업데이트
             orders = orders.map(o => {
                 if (String(o.ordererPhone || o.phone) === originalPhone) {
                     updated = true;
@@ -992,7 +1087,8 @@
                         ...o,
                         ordererName: newName,
                         ordererPhone: newPhone,
-                        ordererAddress: newAddress
+                        ordererAddress: newAddress,
+                        memo: newMemo || o.memo
                     };
                 }
                 return o;
@@ -1001,6 +1097,7 @@
             if (updated) {
                 localStorage.setItem('orders', JSON.stringify(orders));
                 
+                // 서버에도 업데이트
                 showSyncStatus('저장 중...', 'loading');
                 for (const order of orders.filter(o => String(o.ordererPhone) === newPhone)) {
                     await saveOrderToServer(order);
