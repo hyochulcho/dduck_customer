@@ -1,1 +1,2035 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>떡뜨래 고객관리</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%); min-height: 100vh; }
+        
+        .container { max-width: 768px; margin: 0 auto; padding: 8px; padding-bottom: 80px; }
+        
+        /* 헤더 */
+        .header { background: linear-gradient(135deg, #F97316 0%, #EA580C 100%); color: white; padding: 16px; border-radius: 16px; margin-bottom: 12px; text-align: center; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3); }
+        .header h1 { font-size: 1.5rem; font-weight: 700; }
+        .header p { font-size: 0.85rem; opacity: 0.9; margin-top: 4px; }
+        
+        /* 동기화 상태 표시 */
+        .sync-status { background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; }
+        .sync-status.synced { background: #D1FAE5; border-color: #10B981; }
+        .sync-status.error { background: #FEE2E2; border-color: #EF4444; }
+        .sync-btn { background: #F97316; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+        .sync-btn:hover { background: #EA580C; }
+        
+        /* 네비게이션 */
+        .nav-tabs { display: flex; background: white; border-radius: 12px; padding: 4px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow-x: auto; }
+        .nav-tab { flex: none; min-width: 70px; padding: 10px 8px; border: none; background: none; cursor: pointer; border-radius: 8px; font-size: 0.8rem; font-weight: 500; color: #64748B; transition: all 0.2s; white-space: nowrap; }
+        .nav-tab.active { background: #F97316; color: white; }
+        
+        /* 탭 컨텐츠 */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* 카드 */
+        .card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .card-title { font-size: 1rem; font-weight: 700; color: #1E293B; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        
+        /* 폼 요소 */
+        .form-group { margin-bottom: 12px; }
+        .form-label { display: block; font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 6px; }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 12px; border: 2px solid #E5E7EB; border-radius: 10px; font-size: 1rem; transition: all 0.2s; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: #F97316; outline: none; box-shadow: 0 0 0 3px rgba(249,115,22,0.1); }
+        .form-textarea { resize: vertical; min-height: 80px; }
+        
+        /* 체크박스 */
+        .checkbox-group { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+        .checkbox-group input[type="checkbox"] { width: 20px; height: 20px; accent-color: #F97316; }
+        .checkbox-group label { font-size: 0.9rem; color: #374151; cursor: pointer; }
+        
+        /* 버튼 */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 20px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: linear-gradient(135deg, #F97316 0%, #EA580C 100%); color: white; width: 100%; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(249,115,22,0.3); }
+        .btn-secondary { background: #F1F5F9; color: #475569; }
+        .btn-secondary:hover { background: #E2E8F0; }
+        .btn-success { background: #10B981; color: white; }
+        .btn-danger { background: #EF4444; color: white; }
+        .btn-small { padding: 8px 12px; font-size: 0.8rem; }
+        
+        /* 주문 카드 */
+        .order-card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 10px; border-left: 4px solid #F97316; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .order-card.completed { border-left-color: #10B981; opacity: 0.8; }
+        .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .order-name { font-weight: 700; font-size: 1rem; color: #1E293B; }
+        .order-status { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .status-pending { background: #FEF3C7; color: #D97706; }
+        .status-completed { background: #D1FAE5; color: #059669; }
+        .order-details { font-size: 0.85rem; color: #64748B; line-height: 1.6; }
+        .order-actions { display: flex; gap: 8px; margin-top: 10px; }
+        
+        /* 고객 정보 표시 */
+        .customer-found { background: #D1FAE5; border: 1px solid #10B981; border-radius: 8px; padding: 10px; margin-top: 8px; font-size: 0.85rem; color: #065F46; }
+        .customer-found strong { color: #047857; }
+        
+        /* 고객 카드 */
+        .customer-card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer; transition: all 0.2s; }
+        .customer-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .customer-name { font-weight: 700; font-size: 1rem; color: #1E293B; }
+        .customer-info { font-size: 0.85rem; color: #64748B; margin-top: 4px; }
+        .customer-stats { display: flex; gap: 12px; margin-top: 8px; }
+        .customer-stat { font-size: 0.8rem; color: #F97316; font-weight: 600; }
+        
+        /* 폴더 & 메모 카드 */
+        .folder-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px; }
+        .folder-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .folder-icon { font-size: 2rem; }
+        .folder-info { flex: 1; }
+        .folder-name { font-weight: 700; color: #1E293B; }
+        .folder-count { font-size: 0.8rem; color: #64748B; margin-top: 2px; }
+        .folder-actions { display: flex; gap: 4px; }
+        .folder-actions button { background: none; border: none; cursor: pointer; padding: 4px; font-size: 1rem; }
+        
+        .memo-card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer; border-left: 4px solid #F97316; }
+        .memo-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .memo-title { font-weight: 700; color: #1E293B; margin-bottom: 4px; }
+        .memo-preview { font-size: 0.85rem; color: #64748B; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .memo-date { font-size: 0.75rem; color: #9CA3AF; margin-top: 6px; }
+        
+        /* 모달 */
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 16px; padding: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .modal-title { font-size: 1.1rem; font-weight: 700; color: #1E293B; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #9CA3AF; }
+        
+        /* 통계 */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .stat-card { background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%); border-radius: 12px; padding: 16px; text-align: center; }
+        .stat-value { font-size: 1.5rem; font-weight: 700; color: #F97316; }
+        .stat-label { font-size: 0.8rem; color: #64748B; margin-top: 4px; }
+        
+        /* 날짜 필터 */
+        .date-filter { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .date-filter input { flex: 1; min-width: 140px; }
+        
+        /* 검색 */
+        .search-box { position: relative; margin-bottom: 12px; }
+        .search-box input { padding-left: 40px; }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9CA3AF; }
+        
+        /* 배지 */
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+        .badge-new { background: #DBEAFE; color: #1D4ED8; }
+        .badge-vip { background: #FEF3C7; color: #D97706; }
+        
+        /* 설정 아이템 */
+        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #F1F5F9; }
+        .setting-item:last-child { border-bottom: none; }
+        .setting-label { font-weight: 500; color: #374151; }
+        
+        /* 메시지 선택 */
+        .message-option { padding: 12px; border: 2px solid #E5E7EB; border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
+        .message-option:hover { border-color: #F97316; background: #FFF7ED; }
+        .message-option.selected { border-color: #F97316; background: #FFF7ED; }
+        
+        /* 자동완성 드롭다운 */
+        .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #E5E7EB; border-top: none; border-radius: 0 0 10px 10px; max-height: 200px; overflow-y: auto; z-index: 100; display: none; }
+        .autocomplete-dropdown.show { display: block; }
+        .autocomplete-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #F1F5F9; }
+        .autocomplete-item:hover { background: #FFF7ED; }
+        .autocomplete-item:last-child { border-bottom: none; }
+        .autocomplete-name { font-weight: 600; color: #1E293B; }
+        .autocomplete-phone { font-size: 0.85rem; color: #64748B; }
+        
+        /* 아이콘 선택 그리드 */
+        .icon-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 8px; }
+        .icon-option { padding: 10px; text-align: center; font-size: 1.5rem; border: 2px solid #E5E7EB; border-radius: 8px; cursor: pointer; }
+        .icon-option:hover { border-color: #F97316; background: #FFF7ED; }
+        .icon-option.selected { border-color: #F97316; background: #FFF7ED; }
+        
+        /* 하단 네비게이션 */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 8px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 100; }
+        .bottom-nav-item { display: flex; flex-direction: column; align-items: center; padding: 8px 12px; color: #64748B; text-decoration: none; font-size: 0.75rem; cursor: pointer; }
+        .bottom-nav-item.active { color: #F97316; }
+        .bottom-nav-item span { font-size: 1.3rem; margin-bottom: 2px; }
+        
+        /* 입금 상태 필터 */
+        .payment-filters { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .payment-filter { padding: 8px 16px; border-radius: 20px; border: 2px solid #E5E7EB; background: white; cursor: pointer; font-size: 0.85rem; font-weight: 500; }
+        .payment-filter.active { border-color: #F97316; background: #FFF7ED; color: #F97316; }
+        
+        /* 반응형 */
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .nav-tab { min-width: 60px; font-size: 0.75rem; padding: 8px 6px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="header">
+            <h1>🍡 떡뜨래 고객관리</h1>
+            <p id="today-date">2024년 1월 1일 월요일</p>
+        </div>
+        
+        <!-- 동기화 상태 -->
+        <div class="sync-status" id="syncStatus">
+            <span id="syncText">🔄 동기화 확인 중...</span>
+            <button class="sync-btn" onclick="manualSync()">새로고침</button>
+        </div>
+
+        <!-- 네비게이션 -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('order', this)">📝 주문</button>
+            <button class="nav-tab" onclick="switchTab('customers', this)">👥 고객</button>
+            <button class="nav-tab" onclick="switchTab('today', this)">🚚 배송</button>
+            <button class="nav-tab" onclick="switchTab('status', this)">📊 현황</button>
+            <button class="nav-tab" onclick="switchTab('memo', this)">📒 메모</button>
+            <button class="nav-tab" onclick="switchTab('message', this)">💬 문자</button>
+            <button class="nav-tab" onclick="switchTab('stats', this)">📈 통계</button>
+            <button class="nav-tab" onclick="switchTab('settings', this)">⚙️ 설정</button>
+        </div>
+
+        <!-- 주문 입력 탭 -->
+        <div id="tab-order" class="tab-content active">
+            <div class="card">
+                <div class="card-title">📝 새 주문 등록</div>
+                
+                <div class="form-group" style="position: relative;">
+                    <label class="form-label">주문자명 *</label>
+                    <input type="text" id="ordererName" class="form-input" placeholder="이름 입력" oninput="searchCustomerByName(this.value)">
+                    <div class="autocomplete-dropdown" id="nameAutocomplete"></div>
+                </div>
+                
+                <div class="form-group" style="position: relative;">
+                    <label class="form-label">연락처 *</label>
+                    <input type="tel" id="ordererPhone" class="form-input" placeholder="010-0000-0000" oninput="searchCustomerByPhone(this.value)">
+                    <div class="autocomplete-dropdown" id="phoneAutocomplete"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">주소</label>
+                    <input type="text" id="ordererAddress" class="form-input" placeholder="배송 주소">
+                </div>
+                
+                <div id="customerFoundInfo" class="customer-found" style="display: none;"></div>
+                
+                <hr style="margin: 16px 0; border: none; border-top: 1px solid #E5E7EB;">
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="sameAsOrderer" onchange="toggleSameAsOrderer()">
+                    <label for="sameAsOrderer">받는 분이 주문자와 동일</label>
+                </div>
+                
+                <div id="receiverSection">
+                    <div class="form-group">
+                        <label class="form-label">받는 분</label>
+                        <input type="text" id="receiverName" class="form-input" placeholder="이름 입력">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">받는 분 연락처</label>
+                        <input type="tel" id="receiverPhone" class="form-input" placeholder="010-0000-0000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">배송지 주소</label>
+                        <input type="text" id="receiverAddress" class="form-input" placeholder="배송 주소">
+                    </div>
+                </div>
+                
+                <hr style="margin: 16px 0; border: none; border-top: 1px solid #E5E7EB;">
+                
+                <div class="form-group">
+                    <label class="form-label">주문내용 *</label>
+                    <textarea id="menu" class="form-textarea" placeholder="예: 인절미 2kg, 송편 30개"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">배송일자 *</label>
+                    <input type="date" id="deliveryDate" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">배송시간</label>
+                    <select id="deliveryTime" class="form-select">
+                        <option value="">선택</option>
+                        <option value="오전 9시">오전 9시</option>
+                        <option value="오전 10시">오전 10시</option>
+                        <option value="오전 11시">오전 11시</option>
+                        <option value="오후 12시">오후 12시</option>
+                        <option value="오후 1시">오후 1시</option>
+                        <option value="오후 2시">오후 2시</option>
+                        <option value="오후 3시">오후 3시</option>
+                        <option value="오후 4시">오후 4시</option>
+                        <option value="오후 5시">오후 5시</option>
+                        <option value="저녁 6시 이후">저녁 6시 이후</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">금액</label>
+                    <input type="text" id="amount" class="form-input" placeholder="50,000">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">입금방법</label>
+                    <select id="paymentMethod" class="form-select">
+                        <option value="">선택</option>
+                        <option value="계좌이체">계좌이체</option>
+                        <option value="카드결제">카드결제</option>
+                        <option value="현금">현금</option>
+                        <option value="후불">후불</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">입금상태</label>
+                    <select id="paymentStatus" class="form-select">
+                        <option value="미입금">미입금</option>
+                        <option value="입금완료">입금완료</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">유입경로</label>
+                    <select id="source" class="form-select">
+                        <option value="">선택</option>
+                        <option value="인스타그램">인스타그램</option>
+                        <option value="네이버">네이버</option>
+                        <option value="지인소개">지인소개</option>
+                        <option value="기존고객">기존고객</option>
+                        <option value="기타">기타</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">메모</label>
+                    <textarea id="orderMemo" class="form-textarea" placeholder="특이사항 입력"></textarea>
+                </div>
+                
+                <button class="btn btn-primary" onclick="saveOrder()">💾 주문 저장</button>
+            </div>
+        </div>
+
+        <!-- 고객 목록 탭 -->
+        <div id="tab-customers" class="tab-content">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="customerSearch" class="form-input" style="padding-left: 40px;" placeholder="이름 또는 연락처로 검색" oninput="filterCustomers(this.value)">
+            </div>
+            <div id="customerList"></div>
+        </div>
+
+        <!-- 오늘 배송 탭 -->
+        <div id="tab-today" class="tab-content">
+            <div class="card">
+                <div class="card-title">🚚 오늘 배송 목록</div>
+                <div id="todayDeliveryList"></div>
+            </div>
+        </div>
+
+        <!-- 주문 현황 탭 -->
+        <div id="tab-status" class="tab-content">
+            <div class="date-filter">
+                <input type="date" id="statusStartDate" class="form-input" onchange="filterOrdersByDate()">
+                <input type="date" id="statusEndDate" class="form-input" onchange="filterOrdersByDate()">
+            </div>
+            
+            <div class="payment-filters">
+                <button class="payment-filter active" onclick="filterByPayment('all', this)">전체</button>
+                <button class="payment-filter" onclick="filterByPayment('미입금', this)">미입금</button>
+                <button class="payment-filter" onclick="filterByPayment('입금완료', this)">입금완료</button>
+            </div>
+            
+            <div id="orderStatusList"></div>
+        </div>
+
+        <!-- 메모장 탭 -->
+        <div id="tab-memo" class="tab-content">
+            <div id="memoFolderView">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="font-weight: 700; color: #1E293B;">📁 폴더 목록</h3>
+                    <button class="btn btn-primary btn-small" onclick="showAddFolderModal()">+ 폴더 추가</button>
+                </div>
+                <div id="folderList"></div>
+            </div>
+            
+            <div id="memoDetailView" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <button class="btn btn-secondary btn-small" onclick="backToFolders()">← 뒤로</button>
+                    <h3 id="currentFolderName" style="font-weight: 700; color: #1E293B;"></h3>
+                    <button class="btn btn-primary btn-small" onclick="showAddMemoModal()">+ 메모</button>
+                </div>
+                <div id="memoList"></div>
+            </div>
+        </div>
+
+        <!-- 문자 탭 -->
+        <div id="tab-message" class="tab-content">
+            <div class="card">
+                <div class="card-title">💬 문자 메시지 발송</div>
+                <p style="font-size: 0.85rem; color: #64748B; margin-bottom: 12px;">발송할 메시지 유형을 선택하세요</p>
+                
+                <div class="message-option" onclick="selectMessage('order')">
+                    <strong>📦 주문 확인</strong>
+                    <p style="font-size: 0.85rem; color: #64748B; margin-top: 4px;">주문 접수 완료 안내</p>
+                </div>
+                
+                <div class="message-option" onclick="selectMessage('delivery')">
+                    <strong>🚚 배송 안내</strong>
+                    <p style="font-size: 0.85rem; color: #64748B; margin-top: 4px;">배송 시작 안내</p>
+                </div>
+                
+                <div class="message-option" onclick="selectMessage('payment')">
+                    <strong>💰 입금 요청</strong>
+                    <p style="font-size: 0.85rem; color: #64748B; margin-top: 4px;">입금 안내 메시지</p>
+                </div>
+                
+                <div class="message-option" onclick="selectMessage('thanks')">
+                    <strong>🙏 감사 인사</strong>
+                    <p style="font-size: 0.85rem; color: #64748B; margin-top: 4px;">구매 감사 메시지</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 통계 탭 -->
+        <div id="tab-stats" class="tab-content">
+            <div class="date-filter">
+                <input type="date" id="statsStartDate" class="form-input" onchange="updateStats()">
+                <input type="date" id="statsEndDate" class="form-input" onchange="updateStats()">
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="statTotalOrders">0</div>
+                    <div class="stat-label">총 주문</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statTotalRevenue">0</div>
+                    <div class="stat-label">총 매출</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statPending">0</div>
+                    <div class="stat-label">미입금</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statCompleted">0</div>
+                    <div class="stat-label">입금완료</div>
+                </div>
+            </div>
+            
+            <div class="card" style="margin-top: 12px;">
+                <div class="card-title">📊 유입경로별 통계</div>
+                <div id="sourceStats"></div>
+            </div>
+        </div>
+
+        <!-- 설정 탭 -->
+        <div id="tab-settings" class="tab-content">
+            <div class="card">
+                <div class="card-title">⚙️ 설정</div>
+                
+                <div class="setting-item">
+                    <span class="setting-label">유입경로 관리</span>
+                    <button class="btn btn-secondary btn-small" onclick="openSourceSettings()">관리</button>
+                </div>
+                
+                <div class="setting-item">
+                    <span class="setting-label">서버에서 불러오기</span>
+                    <button class="btn btn-secondary btn-small" onclick="loadFromServer()">불러오기</button>
+                </div>
+                
+                <div class="setting-item">
+                    <span class="setting-label">서버로 전체 저장</span>
+                    <button class="btn btn-secondary btn-small" onclick="saveAllToServer()">저장</button>
+                </div>
+                
+                <div class="setting-item">
+                    <span class="setting-label">데이터 백업</span>
+                    <button class="btn btn-secondary btn-small" onclick="backupData()">다운로드</button>
+                </div>
+                
+                <div class="setting-item">
+                    <span class="setting-label">데이터 복원</span>
+                    <input type="file" id="restoreFile" accept=".json" style="display: none;" onchange="restoreData(event)">
+                    <button class="btn btn-secondary btn-small" onclick="document.getElementById('restoreFile').click()">파일 선택</button>
+                </div>
+                
+                <div class="setting-item">
+                    <span class="setting-label" style="color: #EF4444;">전체 데이터 삭제</span>
+                    <button class="btn btn-danger btn-small" onclick="clearAllData()">삭제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 고객 상세 모달 -->
+    <div class="modal" id="customerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">👤 고객 정보</h3>
+                <button class="modal-close" onclick="closeCustomerModal()">×</button>
+            </div>
+            <div id="customerModalContent"></div>
+        </div>
+    </div>
+    
+    <!-- 고객 정보 수정 모달 -->
+    <div class="modal" id="editCustomerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">✏️ 고객 정보 수정</h3>
+                <button class="modal-close" onclick="closeEditCustomerModal()">×</button>
+            </div>
+            <input type="hidden" id="editCustomerOriginalPhone">
+            <div class="form-group">
+                <label class="form-label">이름</label>
+                <input type="text" id="editCustomerName" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">연락처</label>
+                <input type="tel" id="editCustomerPhone" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">주소</label>
+                <input type="text" id="editCustomerAddress" class="form-input">
+            </div>
+            <button class="btn btn-primary" onclick="saveCustomerEdit()">💾 저장</button>
+        </div>
+    </div>
+
+    <!-- 주문 상세 모달 -->
+    <div class="modal" id="orderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">📋 주문 상세</h3>
+                <button class="modal-close" onclick="closeOrderModal()">×</button>
+            </div>
+            <div id="orderModalContent"></div>
+        </div>
+    </div>
+    
+    <!-- 주문 수정 모달 -->
+    <div class="modal" id="editOrderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">✏️ 주문 수정</h3>
+                <button class="modal-close" onclick="closeEditOrderModal()">×</button>
+            </div>
+            <input type="hidden" id="editOrderId">
+            <div class="form-group">
+                <label class="form-label">주문자명</label>
+                <input type="text" id="editOrdererName" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">연락처</label>
+                <input type="tel" id="editOrdererPhone" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">주소</label>
+                <input type="text" id="editOrdererAddress" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">받는 분</label>
+                <input type="text" id="editReceiverName" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">받는 분 연락처</label>
+                <input type="tel" id="editReceiverPhone" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">배송지</label>
+                <input type="text" id="editReceiverAddress" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">주문내용</label>
+                <textarea id="editMenu" class="form-textarea"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">배송일자</label>
+                <input type="date" id="editDeliveryDate" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">배송시간</label>
+                <select id="editDeliveryTime" class="form-select">
+                    <option value="">선택</option>
+                    <option value="오전 9시">오전 9시</option>
+                    <option value="오전 10시">오전 10시</option>
+                    <option value="오전 11시">오전 11시</option>
+                    <option value="오후 12시">오후 12시</option>
+                    <option value="오후 1시">오후 1시</option>
+                    <option value="오후 2시">오후 2시</option>
+                    <option value="오후 3시">오후 3시</option>
+                    <option value="오후 4시">오후 4시</option>
+                    <option value="오후 5시">오후 5시</option>
+                    <option value="저녁 6시 이후">저녁 6시 이후</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">금액</label>
+                <input type="text" id="editAmount" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">입금상태</label>
+                <select id="editPaymentStatus" class="form-select">
+                    <option value="미입금">미입금</option>
+                    <option value="입금완료">입금완료</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">메모</label>
+                <textarea id="editOrderMemo" class="form-textarea"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="saveOrderEdit()">💾 저장</button>
+        </div>
+    </div>
+
+    <!-- 폴더 추가/수정 모달 -->
+    <div class="modal" id="folderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="folderModalTitle">📁 새 폴더</h3>
+                <button class="modal-close" onclick="closeFolderModal()">×</button>
+            </div>
+            <input type="hidden" id="editFolderId">
+            <div class="form-group">
+                <label class="form-label">폴더 이름</label>
+                <input type="text" id="folderNameInput" class="form-input" placeholder="폴더 이름 입력">
+            </div>
+            <div class="form-group">
+                <label class="form-label">아이콘 선택</label>
+                <div class="icon-grid" id="iconGrid"></div>
+            </div>
+            <button class="btn btn-primary" onclick="saveFolder()">💾 저장</button>
+        </div>
+    </div>
+
+    <!-- 메모 추가/수정 모달 -->
+    <div class="modal" id="memoModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="memoModalTitle">📝 새 메모</h3>
+                <button class="modal-close" onclick="closeMemoModal()">×</button>
+            </div>
+            <input type="hidden" id="editMemoId">
+            <div class="form-group">
+                <label class="form-label">제목</label>
+                <input type="text" id="memoTitleInput" class="form-input" placeholder="메모 제목">
+            </div>
+            <div class="form-group">
+                <label class="form-label">내용</label>
+                <textarea id="memoContentInput" class="form-textarea" rows="8" placeholder="메모 내용 입력"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="saveMemo()">💾 저장</button>
+        </div>
+    </div>
+
+    <!-- 메모 보기 모달 -->
+    <div class="modal" id="memoViewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="memoViewTitle">메모</h3>
+                <button class="modal-close" onclick="closeMemoViewModal()">×</button>
+            </div>
+            <div id="memoViewContent" style="white-space: pre-wrap; line-height: 1.8; color: #374151;"></div>
+            <div style="display: flex; gap: 8px; margin-top: 16px;">
+                <button class="btn btn-secondary" style="flex: 1;" onclick="editCurrentMemo()">✏️ 수정</button>
+                <button class="btn btn-danger" style="flex: 1;" onclick="deleteCurrentMemo()">🗑️ 삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 유입경로 설정 모달 -->
+    <div class="modal" id="sourceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">📊 유입경로 관리</h3>
+                <button class="modal-close" onclick="closeSourceModal()">×</button>
+            </div>
+            <div id="sourceList"></div>
+            <div class="form-group" style="margin-top: 16px;">
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="newSource" class="form-input" placeholder="새 유입경로">
+                    <button class="btn btn-primary btn-small" onclick="addSource()">추가</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 서버 API ==========
+        const API_URL = 'https://script.google.com/macros/s/여기에_새_URL을_붙여넣으세요/exec';
+        
+        // ========== 로컬 스토리지 키 ==========
+        const STORAGE_KEYS = {
+            orders: 'dduck_orders',
+            sources: 'dduck_sources',
+            memoFolders: 'dduck_memoFolders',
+            memos: 'dduck_memos',
+            lastSync: 'dduck_lastSync'
+        };
+        
+        // ========== 전역 변수 ==========
+        let currentFolderId = null;
+        let currentMemoId = null;
+        let currentPaymentFilter = 'all';
+        let selectedFolderIcon = '📁';
+        const FOLDER_ICONS = ['📁', '⭐', '📌', '💼', '🏠', '🎂', '🍡', '🎁', '❤️', '📋', '🔖', '💡'];
+        
+        // ========== 초기화 ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+        
+        async function initializeApp() {
+            updateTodayDate();
+            initializeDates();
+            initializeDefaultData();
+            await loadFromServer(); // 서버에서 데이터 불러오기
+            renderAll();
+        }
+        
+        function updateTodayDate() {
+            const now = new Date();
+            const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+            document.getElementById('today-date').textContent = 
+                `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${days[now.getDay()]}`;
+        }
+        
+        function initializeDates() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('deliveryDate').value = today;
+            document.getElementById('statusStartDate').value = today;
+            document.getElementById('statusEndDate').value = today;
+            document.getElementById('statsStartDate').value = today;
+            document.getElementById('statsEndDate').value = today;
+        }
+        
+        function initializeDefaultData() {
+            if (!localStorage.getItem(STORAGE_KEYS.sources)) {
+                localStorage.setItem(STORAGE_KEYS.sources, JSON.stringify(['인스타그램', '네이버', '지인소개', '기존고객', '기타']));
+            }
+            if (!localStorage.getItem(STORAGE_KEYS.memoFolders)) {
+                localStorage.setItem(STORAGE_KEYS.memoFolders, JSON.stringify([
+                    {id: 1, name: '일반 메모', icon: '📁'},
+                    {id: 2, name: '중요', icon: '⭐'},
+                    {id: 3, name: '레시피', icon: '🍡'}
+                ]));
+            }
+            if (!localStorage.getItem(STORAGE_KEYS.memos)) {
+                localStorage.setItem(STORAGE_KEYS.memos, JSON.stringify([]));
+            }
+            if (!localStorage.getItem(STORAGE_KEYS.orders)) {
+                localStorage.setItem(STORAGE_KEYS.orders, JSON.stringify([]));
+            }
+        }
+        
+        // ========== 서버 통신 ==========
+        async function loadFromServer() {
+            try {
+                updateSyncStatus('loading', '🔄 서버에서 불러오는 중...');
+                const response = await fetch(`${API_URL}?action=getAllData`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (result.orders && result.orders.length > 0) {
+                        localStorage.setItem(STORAGE_KEYS.orders, JSON.stringify(result.orders));
+                    }
+                    if (result.folders && result.folders.length > 0) {
+                        localStorage.setItem(STORAGE_KEYS.memoFolders, JSON.stringify(result.folders));
+                    }
+                    if (result.memos && result.memos.length > 0) {
+                        localStorage.setItem(STORAGE_KEYS.memos, JSON.stringify(result.memos));
+                    }
+                    localStorage.setItem(STORAGE_KEYS.lastSync, new Date().toISOString());
+                    updateSyncStatus('synced', '✅ 동기화 완료');
+                    renderAll();
+                } else {
+                    updateSyncStatus('error', '⚠️ 불러오기 실패');
+                }
+            } catch (error) {
+                console.error('서버 로드 오류:', error);
+                updateSyncStatus('error', '⚠️ 서버 연결 실패 (로컬 데이터 사용)');
+            }
+        }
+        
+        async function saveOrderToServer(order) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `action=saveOrder&data=${encodeURIComponent(JSON.stringify(order))}`
+                });
+                const result = await response.json();
+                return result.success;
+            } catch (error) {
+                console.error('주문 저장 오류:', error);
+                return false;
+            }
+        }
+        
+        async function deleteOrderFromServer(orderId) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `action=deleteOrder&id=${encodeURIComponent(orderId)}`
+                });
+                const result = await response.json();
+                return result.success;
+            } catch (error) {
+                console.error('주문 삭제 오류:', error);
+                return false;
+            }
+        }
+        
+        async function saveFolderToServer(folder) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `action=saveFolder&data=${encodeURIComponent(JSON.stringify(folder))}`
+                });
+                const result = await response.json();
+                return result.success;
+            } catch (error) {
+                console.error('폴더 저장 오류:', error);
+                return false;
+            }
+        }
+        
+        async function deleteFolderFromServer(folderId) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `action=deleteFolder&id=${encodeURIComponent(folderId)}`
+                });
+                const result = await response.json();
+                return result.success;
+            } catch (error) {
+                console.error('폴더 삭제 오류:', error);
+                return false;
+            }
+        }
+        
+        async function saveMemoToServer(memo) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `action=saveMemo&data=${encodeURIComponent(JSON.stringify(memo))}`
+                });
+                const result = await response.json();
+                return result.success;
+            } catch (error) {
+                console.error('메모 저장 오류:', error);
+                return false;
+            }
+        }
+        
+        async function deleteMemoFromServer(memoId) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `action=deleteMemo&id=${encodeURIComponent(memoId)}`
+                });
+                const result = await response.json();
+                return result.success;
+            } catch (error) {
+                console.error('메모 삭제 오류:', error);
+                return false;
+            }
+        }
+        
+        async function saveAllToServer() {
+            try {
+                updateSyncStatus('loading', '🔄 서버에 저장 중...');
+                const orders = getOrders();
+                const folders = getMemoFolders();
+                const memos = getMemos();
+                
+                let successCount = 0;
+                let totalCount = orders.length + folders.length + memos.length;
+                
+                for (const order of orders) {
+                    if (await saveOrderToServer(order)) successCount++;
+                }
+                for (const folder of folders) {
+                    if (await saveFolderToServer(folder)) successCount++;
+                }
+                for (const memo of memos) {
+                    if (await saveMemoToServer(memo)) successCount++;
+                }
+                
+                if (successCount === totalCount) {
+                    updateSyncStatus('synced', '✅ 전체 저장 완료');
+                    alert('✅ 서버에 전체 데이터가 저장되었습니다!');
+                } else {
+                    updateSyncStatus('error', `⚠️ ${totalCount - successCount}개 저장 실패`);
+                }
+            } catch (error) {
+                console.error('전체 저장 오류:', error);
+                updateSyncStatus('error', '⚠️ 저장 실패');
+            }
+        }
+        
+        function manualSync() {
+            loadFromServer();
+        }
+        
+        function updateSyncStatus(status, text) {
+            const el = document.getElementById('syncStatus');
+            const textEl = document.getElementById('syncText');
+            el.className = 'sync-status ' + status;
+            textEl.textContent = text;
+        }
+        
+        // ========== 로컬 데이터 접근 ==========
+        function getOrders() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEYS.orders) || '[]');
+        }
+        
+        function saveOrders(orders) {
+            localStorage.setItem(STORAGE_KEYS.orders, JSON.stringify(orders));
+        }
+        
+        function getMemoFolders() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEYS.memoFolders) || '[]');
+        }
+        
+        function saveMemoFolders(folders) {
+            localStorage.setItem(STORAGE_KEYS.memoFolders, JSON.stringify(folders));
+        }
+        
+        function getMemos() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEYS.memos) || '[]');
+        }
+        
+        function saveMemos(memos) {
+            localStorage.setItem(STORAGE_KEYS.memos, JSON.stringify(memos));
+        }
+        
+        function getSources() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEYS.sources) || '[]');
+        }
+        
+        function saveSources(sources) {
+            localStorage.setItem(STORAGE_KEYS.sources, JSON.stringify(sources));
+        }
+        
+        // ========== 탭 전환 ==========
+        function switchTab(tabName, button) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            button.classList.add('active');
+        }
+        
+        // ========== 주문 입력 ==========
+        function toggleSameAsOrderer() {
+            const checked = document.getElementById('sameAsOrderer').checked;
+            const section = document.getElementById('receiverSection');
+            if (checked) {
+                section.style.display = 'none';
+            } else {
+                section.style.display = 'block';
+            }
+        }
+        
+        // 이름으로 고객 검색
+        function searchCustomerByName(name) {
+            const dropdown = document.getElementById('nameAutocomplete');
+            if (name.length < 1) {
+                dropdown.classList.remove('show');
+                return;
+            }
+            
+            const customers = generateCustomers();
+            const matches = customers.filter(c => c.name.includes(name)).slice(0, 5);
+            
+            if (matches.length > 0) {
+                dropdown.innerHTML = matches.map(c => `
+                    <div class="autocomplete-item" onclick="selectCustomer('${c.phone}')">
+                        <div class="autocomplete-name">${c.name}</div>
+                        <div class="autocomplete-phone">${c.phone}</div>
+                    </div>
+                `).join('');
+                dropdown.classList.add('show');
+            } else {
+                dropdown.classList.remove('show');
+            }
+        }
+        
+        // 전화번호로 고객 검색
+        function searchCustomerByPhone(phone) {
+            const dropdown = document.getElementById('phoneAutocomplete');
+            if (phone.length < 3) {
+                dropdown.classList.remove('show');
+                document.getElementById('customerFoundInfo').style.display = 'none';
+                return;
+            }
+            
+            const customers = generateCustomers();
+            const matches = customers.filter(c => c.phone.includes(phone)).slice(0, 5);
+            
+            if (matches.length > 0) {
+                dropdown.innerHTML = matches.map(c => `
+                    <div class="autocomplete-item" onclick="selectCustomer('${c.phone}')">
+                        <div class="autocomplete-name">${c.name}</div>
+                        <div class="autocomplete-phone">${c.phone}</div>
+                    </div>
+                `).join('');
+                dropdown.classList.add('show');
+            } else {
+                dropdown.classList.remove('show');
+            }
+        }
+        
+        // 고객 선택
+        function selectCustomer(phone) {
+            const customers = generateCustomers();
+            const customer = customers.find(c => c.phone === phone);
+            
+            if (customer) {
+                document.getElementById('ordererName').value = customer.name;
+                document.getElementById('ordererPhone').value = customer.phone;
+                document.getElementById('ordererAddress').value = customer.address || '';
+                
+                document.getElementById('customerFoundInfo').style.display = 'block';
+                document.getElementById('customerFoundInfo').innerHTML = `
+                    <strong>✅ 기존 고객</strong><br>
+                    ${customer.name} | 주문 ${customer.orderCount}회 | 총 ${customer.totalAmount.toLocaleString()}원
+                `;
+            }
+            
+            document.getElementById('nameAutocomplete').classList.remove('show');
+            document.getElementById('phoneAutocomplete').classList.remove('show');
+        }
+        
+        // 주문 저장
+        async function saveOrder() {
+            const ordererName = document.getElementById('ordererName').value.trim();
+            const ordererPhone = document.getElementById('ordererPhone').value.trim();
+            const menu = document.getElementById('menu').value.trim();
+            const deliveryDate = document.getElementById('deliveryDate').value;
+            
+            if (!ordererName || !ordererPhone || !menu || !deliveryDate) {
+                alert('주문자명, 연락처, 주문내용, 배송일자는 필수입니다.');
+                return;
+            }
+            
+            const sameAsOrderer = document.getElementById('sameAsOrderer').checked;
+            
+            const order = {
+                id: Date.now().toString(),
+                ordererName,
+                ordererPhone,
+                ordererAddress: document.getElementById('ordererAddress').value.trim(),
+                receiverName: sameAsOrderer ? ordererName : document.getElementById('receiverName').value.trim(),
+                receiverPhone: sameAsOrderer ? ordererPhone : document.getElementById('receiverPhone').value.trim(),
+                receiverAddress: sameAsOrderer ? document.getElementById('ordererAddress').value.trim() : document.getElementById('receiverAddress').value.trim(),
+                menu,
+                deliveryDate,
+                deliveryTime: document.getElementById('deliveryTime').value,
+                amount: document.getElementById('amount').value.replace(/,/g, ''),
+                paymentMethod: document.getElementById('paymentMethod').value,
+                paymentStatus: document.getElementById('paymentStatus').value,
+                source: document.getElementById('source').value,
+                memo: document.getElementById('orderMemo').value.trim(),
+                createdAt: new Date().toISOString(),
+                completed: false
+            };
+            
+            // 로컬 저장
+            const orders = getOrders();
+            orders.push(order);
+            saveOrders(orders);
+            
+            // 서버 저장
+            updateSyncStatus('loading', '🔄 저장 중...');
+            const serverSaved = await saveOrderToServer(order);
+            
+            if (serverSaved) {
+                updateSyncStatus('synced', '✅ 저장 완료');
+            } else {
+                updateSyncStatus('error', '⚠️ 서버 저장 실패 (로컬 저장됨)');
+            }
+            
+            // 폼 초기화
+            document.getElementById('ordererName').value = '';
+            document.getElementById('ordererPhone').value = '';
+            document.getElementById('ordererAddress').value = '';
+            document.getElementById('receiverName').value = '';
+            document.getElementById('receiverPhone').value = '';
+            document.getElementById('receiverAddress').value = '';
+            document.getElementById('menu').value = '';
+            document.getElementById('deliveryTime').value = '';
+            document.getElementById('amount').value = '';
+            document.getElementById('paymentMethod').value = '';
+            document.getElementById('paymentStatus').value = '미입금';
+            document.getElementById('source').value = '';
+            document.getElementById('orderMemo').value = '';
+            document.getElementById('sameAsOrderer').checked = false;
+            document.getElementById('receiverSection').style.display = 'block';
+            document.getElementById('customerFoundInfo').style.display = 'none';
+            
+            alert('✅ 주문이 저장되었습니다!');
+            renderAll();
+        }
+        
+        // ========== 고객 관리 ==========
+        function generateCustomers() {
+            const orders = getOrders();
+            const customerMap = {};
+            
+            orders.forEach(order => {
+                const phone = order.ordererPhone;
+                if (!customerMap[phone]) {
+                    customerMap[phone] = {
+                        name: order.ordererName,
+                        phone: phone,
+                        address: order.ordererAddress,
+                        orderCount: 0,
+                        totalAmount: 0,
+                        lastOrder: null,
+                        orders: []
+                    };
+                }
+                customerMap[phone].orderCount++;
+                customerMap[phone].totalAmount += parseInt(order.amount || 0);
+                customerMap[phone].orders.push(order);
+                if (!customerMap[phone].lastOrder || new Date(order.createdAt) > new Date(customerMap[phone].lastOrder)) {
+                    customerMap[phone].lastOrder = order.createdAt;
+                    customerMap[phone].address = order.ordererAddress || customerMap[phone].address;
+                }
+            });
+            
+            return Object.values(customerMap).sort((a, b) => new Date(b.lastOrder) - new Date(a.lastOrder));
+        }
+        
+        function renderCustomers() {
+            const customers = generateCustomers();
+            const list = document.getElementById('customerList');
+            
+            if (customers.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: #9CA3AF;">등록된 고객이 없습니다</div>';
+                return;
+            }
+            
+            list.innerHTML = customers.map(c => `
+                <div class="customer-card" onclick="showCustomerDetail('${c.phone}')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div class="customer-name">${c.name}</div>
+                            <div class="customer-info">${c.phone}</div>
+                            ${c.address ? `<div class="customer-info">${c.address}</div>` : ''}
+                        </div>
+                        ${c.orderCount >= 3 ? '<span class="badge badge-vip">VIP</span>' : ''}
+                    </div>
+                    <div class="customer-stats">
+                        <span class="customer-stat">주문 ${c.orderCount}회</span>
+                        <span class="customer-stat">총 ${c.totalAmount.toLocaleString()}원</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function filterCustomers(query) {
+            const customers = generateCustomers();
+            const filtered = customers.filter(c => 
+                c.name.includes(query) || c.phone.includes(query)
+            );
+            
+            const list = document.getElementById('customerList');
+            if (filtered.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: #9CA3AF;">검색 결과가 없습니다</div>';
+                return;
+            }
+            
+            list.innerHTML = filtered.map(c => `
+                <div class="customer-card" onclick="showCustomerDetail('${c.phone}')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div class="customer-name">${c.name}</div>
+                            <div class="customer-info">${c.phone}</div>
+                        </div>
+                        ${c.orderCount >= 3 ? '<span class="badge badge-vip">VIP</span>' : ''}
+                    </div>
+                    <div class="customer-stats">
+                        <span class="customer-stat">주문 ${c.orderCount}회</span>
+                        <span class="customer-stat">총 ${c.totalAmount.toLocaleString()}원</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function showCustomerDetail(phone) {
+            const customers = generateCustomers();
+            const customer = customers.find(c => c.phone === phone);
+            
+            if (!customer) return;
+            
+            const content = document.getElementById('customerModalContent');
+            content.innerHTML = `
+                <div style="margin-bottom: 16px;">
+                    <p><strong>이름:</strong> ${customer.name}</p>
+                    <p><strong>연락처:</strong> ${customer.phone}</p>
+                    <p><strong>주소:</strong> ${customer.address || '-'}</p>
+                    <p><strong>총 주문:</strong> ${customer.orderCount}회</p>
+                    <p><strong>총 금액:</strong> ${customer.totalAmount.toLocaleString()}원</p>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <button class="btn btn-secondary btn-small" onclick="openEditCustomerModal('${phone}')">✏️ 정보 수정</button>
+                </div>
+                <h4 style="font-weight: 700; margin-bottom: 12px;">📦 주문 내역</h4>
+                ${customer.orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(o => `
+                    <div class="order-card" style="margin-bottom: 8px;">
+                        <div class="order-header">
+                            <span>${o.deliveryDate}</span>
+                            <span class="order-status ${o.paymentStatus === '입금완료' ? 'status-completed' : 'status-pending'}">${o.paymentStatus}</span>
+                        </div>
+                        <div class="order-details">
+                            <p>${o.menu}</p>
+                            <p>${o.amount ? parseInt(o.amount).toLocaleString() + '원' : ''}</p>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+            
+            document.getElementById('customerModal').classList.add('active');
+        }
+        
+        function closeCustomerModal() {
+            document.getElementById('customerModal').classList.remove('active');
+        }
+        
+        function openEditCustomerModal(phone) {
+            const customers = generateCustomers();
+            const customer = customers.find(c => c.phone === phone);
+            
+            if (!customer) return;
+            
+            document.getElementById('editCustomerOriginalPhone').value = phone;
+            document.getElementById('editCustomerName').value = customer.name;
+            document.getElementById('editCustomerPhone').value = customer.phone;
+            document.getElementById('editCustomerAddress').value = customer.address || '';
+            
+            document.getElementById('editCustomerModal').classList.add('active');
+        }
+        
+        function closeEditCustomerModal() {
+            document.getElementById('editCustomerModal').classList.remove('active');
+        }
+        
+        async function saveCustomerEdit() {
+            const originalPhone = document.getElementById('editCustomerOriginalPhone').value;
+            const newName = document.getElementById('editCustomerName').value.trim();
+            const newPhone = document.getElementById('editCustomerPhone').value.trim();
+            const newAddress = document.getElementById('editCustomerAddress').value.trim();
+            
+            if (!newName || !newPhone) {
+                alert('이름과 연락처는 필수입니다.');
+                return;
+            }
+            
+            const orders = getOrders();
+            let updated = false;
+            
+            orders.forEach(order => {
+                if (order.ordererPhone === originalPhone) {
+                    order.ordererName = newName;
+                    order.ordererPhone = newPhone;
+                    order.ordererAddress = newAddress;
+                    updated = true;
+                }
+            });
+            
+            if (updated) {
+                saveOrders(orders);
+                
+                // 서버에도 업데이트
+                updateSyncStatus('loading', '🔄 저장 중...');
+                for (const order of orders.filter(o => o.ordererPhone === newPhone)) {
+                    await saveOrderToServer(order);
+                }
+                updateSyncStatus('synced', '✅ 저장 완료');
+                
+                alert('✅ 고객 정보가 수정되었습니다!');
+                closeEditCustomerModal();
+                closeCustomerModal();
+                renderAll();
+            }
+        }
+        
+        // ========== 배송 관리 ==========
+        function renderTodayDelivery() {
+            const today = new Date().toISOString().split('T')[0];
+            const orders = getOrders().filter(o => o.deliveryDate === today);
+            const list = document.getElementById('todayDeliveryList');
+            
+            if (orders.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: #9CA3AF;">오늘 배송 예정인 주문이 없습니다</div>';
+                return;
+            }
+            
+            // 시간순 정렬
+            const timeOrder = ['오전 9시', '오전 10시', '오전 11시', '오후 12시', '오후 1시', '오후 2시', '오후 3시', '오후 4시', '오후 5시', '저녁 6시 이후', ''];
+            orders.sort((a, b) => timeOrder.indexOf(a.deliveryTime) - timeOrder.indexOf(b.deliveryTime));
+            
+            list.innerHTML = orders.map(o => `
+                <div class="order-card ${o.completed ? 'completed' : ''}">
+                    <div class="order-header">
+                        <span class="order-name">${o.receiverName || o.ordererName}</span>
+                        <span class="order-status ${o.completed ? 'status-completed' : 'status-pending'}">${o.completed ? '배송완료' : (o.deliveryTime || '시간미정')}</span>
+                    </div>
+                    <div class="order-details">
+                        <p>📦 ${o.menu}</p>
+                        <p>📞 ${o.receiverPhone || o.ordererPhone}</p>
+                        <p>📍 ${o.receiverAddress || o.ordererAddress || '주소 없음'}</p>
+                        ${o.memo ? `<p>📝 ${o.memo}</p>` : ''}
+                    </div>
+                    <div class="order-actions">
+                        <button class="btn btn-small ${o.completed ? 'btn-secondary' : 'btn-success'}" onclick="toggleDeliveryComplete('${o.id}')">
+                            ${o.completed ? '↩️ 되돌리기' : '✅ 배송완료'}
+                        </button>
+                        <button class="btn btn-secondary btn-small" onclick="callCustomer('${o.receiverPhone || o.ordererPhone}')">📞 전화</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function toggleDeliveryComplete(orderId) {
+            const orders = getOrders();
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+                order.completed = !order.completed;
+                saveOrders(orders);
+                await saveOrderToServer(order);
+                renderTodayDelivery();
+            }
+        }
+        
+        function callCustomer(phone) {
+            window.location.href = 'tel:' + phone;
+        }
+        
+        // ========== 주문 현황 ==========
+        function renderOrderStatus() {
+            const startDate = document.getElementById('statusStartDate').value;
+            const endDate = document.getElementById('statusEndDate').value;
+            
+            let orders = getOrders().filter(o => {
+                return o.deliveryDate >= startDate && o.deliveryDate <= endDate;
+            });
+            
+            if (currentPaymentFilter !== 'all') {
+                orders = orders.filter(o => o.paymentStatus === currentPaymentFilter);
+            }
+            
+            orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            const list = document.getElementById('orderStatusList');
+            
+            if (orders.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: #9CA3AF;">해당 기간 주문이 없습니다</div>';
+                return;
+            }
+            
+            list.innerHTML = orders.map(o => `
+                <div class="order-card">
+                    <div class="order-header">
+                        <span class="order-name">${o.ordererName}</span>
+                        <span class="order-status ${o.paymentStatus === '입금완료' ? 'status-completed' : 'status-pending'}">${o.paymentStatus}</span>
+                    </div>
+                    <div class="order-details">
+                        <p>📦 ${o.menu}</p>
+                        <p>📅 ${o.deliveryDate} ${o.deliveryTime || ''}</p>
+                        <p>💰 ${o.amount ? parseInt(o.amount).toLocaleString() + '원' : '금액 미입력'}</p>
+                    </div>
+                    <div class="order-actions">
+                        <button class="btn btn-secondary btn-small" onclick="showOrderDetail('${o.id}')">상세</button>
+                        <button class="btn btn-small ${o.paymentStatus === '입금완료' ? 'btn-secondary' : 'btn-success'}" onclick="togglePaymentStatus('${o.id}')">
+                            ${o.paymentStatus === '입금완료' ? '미입금으로' : '입금완료'}
+                        </button>
+                        <button class="btn btn-danger btn-small" onclick="deleteOrder('${o.id}')">삭제</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function filterOrdersByDate() {
+            renderOrderStatus();
+        }
+        
+        function filterByPayment(status, button) {
+            currentPaymentFilter = status;
+            document.querySelectorAll('.payment-filter').forEach(b => b.classList.remove('active'));
+            button.classList.add('active');
+            renderOrderStatus();
+        }
+        
+        async function togglePaymentStatus(orderId) {
+            const orders = getOrders();
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+                order.paymentStatus = order.paymentStatus === '입금완료' ? '미입금' : '입금완료';
+                saveOrders(orders);
+                await saveOrderToServer(order);
+                renderOrderStatus();
+                updateStats();
+            }
+        }
+        
+        function showOrderDetail(orderId) {
+            const orders = getOrders();
+            const order = orders.find(o => o.id === orderId);
+            
+            if (!order) return;
+            
+            const content = document.getElementById('orderModalContent');
+            content.innerHTML = `
+                <div style="line-height: 2;">
+                    <p><strong>주문자:</strong> ${order.ordererName} (${order.ordererPhone})</p>
+                    <p><strong>주문자 주소:</strong> ${order.ordererAddress || '-'}</p>
+                    <hr style="margin: 12px 0;">
+                    <p><strong>받는 분:</strong> ${order.receiverName || order.ordererName} (${order.receiverPhone || order.ordererPhone})</p>
+                    <p><strong>배송지:</strong> ${order.receiverAddress || order.ordererAddress || '-'}</p>
+                    <hr style="margin: 12px 0;">
+                    <p><strong>주문내용:</strong> ${order.menu}</p>
+                    <p><strong>배송일:</strong> ${order.deliveryDate} ${order.deliveryTime || ''}</p>
+                    <p><strong>금액:</strong> ${order.amount ? parseInt(order.amount).toLocaleString() + '원' : '-'}</p>
+                    <p><strong>입금방법:</strong> ${order.paymentMethod || '-'}</p>
+                    <p><strong>입금상태:</strong> ${order.paymentStatus}</p>
+                    <p><strong>유입경로:</strong> ${order.source || '-'}</p>
+                    <p><strong>메모:</strong> ${order.memo || '-'}</p>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 16px;">
+                    <button class="btn btn-secondary" style="flex: 1;" onclick="editOrder('${order.id}')">✏️ 수정</button>
+                    <button class="btn btn-danger" style="flex: 1;" onclick="deleteOrderFromModal('${order.id}')">🗑️ 삭제</button>
+                </div>
+            `;
+            
+            document.getElementById('orderModal').classList.add('active');
+        }
+        
+        function closeOrderModal() {
+            document.getElementById('orderModal').classList.remove('active');
+        }
+        
+        function editOrder(orderId) {
+            const orders = getOrders();
+            const order = orders.find(o => o.id === orderId);
+            
+            if (!order) return;
+            
+            document.getElementById('editOrderId').value = order.id;
+            document.getElementById('editOrdererName').value = order.ordererName;
+            document.getElementById('editOrdererPhone').value = order.ordererPhone;
+            document.getElementById('editOrdererAddress').value = order.ordererAddress || '';
+            document.getElementById('editReceiverName').value = order.receiverName || '';
+            document.getElementById('editReceiverPhone').value = order.receiverPhone || '';
+            document.getElementById('editReceiverAddress').value = order.receiverAddress || '';
+            document.getElementById('editMenu').value = order.menu;
+            document.getElementById('editDeliveryDate').value = order.deliveryDate;
+            document.getElementById('editDeliveryTime').value = order.deliveryTime || '';
+            document.getElementById('editAmount').value = order.amount || '';
+            document.getElementById('editPaymentStatus').value = order.paymentStatus;
+            document.getElementById('editOrderMemo').value = order.memo || '';
+            
+            closeOrderModal();
+            document.getElementById('editOrderModal').classList.add('active');
+        }
+        
+        function closeEditOrderModal() {
+            document.getElementById('editOrderModal').classList.remove('active');
+        }
+        
+        async function saveOrderEdit() {
+            const orderId = document.getElementById('editOrderId').value;
+            const orders = getOrders();
+            const orderIndex = orders.findIndex(o => o.id === orderId);
+            
+            if (orderIndex === -1) return;
+            
+            orders[orderIndex] = {
+                ...orders[orderIndex],
+                ordererName: document.getElementById('editOrdererName').value.trim(),
+                ordererPhone: document.getElementById('editOrdererPhone').value.trim(),
+                ordererAddress: document.getElementById('editOrdererAddress').value.trim(),
+                receiverName: document.getElementById('editReceiverName').value.trim(),
+                receiverPhone: document.getElementById('editReceiverPhone').value.trim(),
+                receiverAddress: document.getElementById('editReceiverAddress').value.trim(),
+                menu: document.getElementById('editMenu').value.trim(),
+                deliveryDate: document.getElementById('editDeliveryDate').value,
+                deliveryTime: document.getElementById('editDeliveryTime').value,
+                amount: document.getElementById('editAmount').value.replace(/,/g, ''),
+                paymentStatus: document.getElementById('editPaymentStatus').value,
+                memo: document.getElementById('editOrderMemo').value.trim()
+            };
+            
+            saveOrders(orders);
+            await saveOrderToServer(orders[orderIndex]);
+            
+            alert('✅ 주문이 수정되었습니다!');
+            closeEditOrderModal();
+            renderAll();
+        }
+        
+        async function deleteOrder(orderId) {
+            if (!confirm('정말 이 주문을 삭제하시겠습니까?')) return;
+            
+            const orders = getOrders().filter(o => o.id !== orderId);
+            saveOrders(orders);
+            await deleteOrderFromServer(orderId);
+            renderAll();
+        }
+        
+        async function deleteOrderFromModal(orderId) {
+            closeOrderModal();
+            await deleteOrder(orderId);
+        }
+        
+        // ========== 메모장 ==========
+        function renderMemoFolders() {
+            const folders = getMemoFolders();
+            const memos = getMemos();
+            const list = document.getElementById('folderList');
+            
+            list.innerHTML = folders.map(f => {
+                const memoCount = memos.filter(m => m.folderId === f.id).length;
+                return `
+                    <div class="folder-card" onclick="openFolder(${f.id})">
+                        <div class="folder-icon">${f.icon}</div>
+                        <div class="folder-info">
+                            <div class="folder-name">${f.name}</div>
+                            <div class="folder-count">메모 ${memoCount}개</div>
+                        </div>
+                        <div class="folder-actions" onclick="event.stopPropagation()">
+                            <button onclick="editFolder(${f.id})">✏️</button>
+                            <button onclick="deleteFolder(${f.id})">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function openFolder(folderId) {
+            currentFolderId = folderId;
+            const folders = getMemoFolders();
+            const folder = folders.find(f => f.id === folderId);
+            
+            document.getElementById('currentFolderName').textContent = folder ? `${folder.icon} ${folder.name}` : '';
+            document.getElementById('memoFolderView').style.display = 'none';
+            document.getElementById('memoDetailView').style.display = 'block';
+            renderMemos();
+        }
+        
+        function backToFolders() {
+            currentFolderId = null;
+            document.getElementById('memoFolderView').style.display = 'block';
+            document.getElementById('memoDetailView').style.display = 'none';
+        }
+        
+        function renderMemos() {
+            const memos = getMemos().filter(m => m.folderId === currentFolderId);
+            const list = document.getElementById('memoList');
+            
+            if (memos.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: #9CA3AF;">메모가 없습니다</div>';
+                return;
+            }
+            
+            memos.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            
+            list.innerHTML = memos.map(m => `
+                <div class="memo-card" onclick="viewMemo(${m.id})">
+                    <div class="memo-title">${m.title}</div>
+                    <div class="memo-preview">${m.content.substring(0, 50)}${m.content.length > 50 ? '...' : ''}</div>
+                    <div class="memo-date">${new Date(m.updatedAt).toLocaleDateString('ko-KR')}</div>
+                </div>
+            `).join('');
+        }
+        
+        function showAddFolderModal() {
+            document.getElementById('folderModalTitle').textContent = '📁 새 폴더';
+            document.getElementById('editFolderId').value = '';
+            document.getElementById('folderNameInput').value = '';
+            selectedFolderIcon = '📁';
+            renderIconGrid();
+            document.getElementById('folderModal').classList.add('active');
+        }
+        
+        function editFolder(folderId) {
+            const folders = getMemoFolders();
+            const folder = folders.find(f => f.id === folderId);
+            
+            if (!folder) return;
+            
+            document.getElementById('folderModalTitle').textContent = '📁 폴더 수정';
+            document.getElementById('editFolderId').value = folderId;
+            document.getElementById('folderNameInput').value = folder.name;
+            selectedFolderIcon = folder.icon;
+            renderIconGrid();
+            document.getElementById('folderModal').classList.add('active');
+        }
+        
+        function renderIconGrid() {
+            const grid = document.getElementById('iconGrid');
+            grid.innerHTML = FOLDER_ICONS.map(icon => `
+                <div class="icon-option ${icon === selectedFolderIcon ? 'selected' : ''}" onclick="selectFolderIcon('${icon}')">${icon}</div>
+            `).join('');
+        }
+        
+        function selectFolderIcon(icon) {
+            selectedFolderIcon = icon;
+            renderIconGrid();
+        }
+        
+        function closeFolderModal() {
+            document.getElementById('folderModal').classList.remove('active');
+        }
+        
+        async function saveFolder() {
+            const name = document.getElementById('folderNameInput').value.trim();
+            if (!name) {
+                alert('폴더 이름을 입력하세요.');
+                return;
+            }
+            
+            const folders = getMemoFolders();
+            const editId = document.getElementById('editFolderId').value;
+            
+            let folder;
+            if (editId) {
+                const index = folders.findIndex(f => f.id === parseInt(editId));
+                if (index !== -1) {
+                    folders[index].name = name;
+                    folders[index].icon = selectedFolderIcon;
+                    folder = folders[index];
+                }
+            } else {
+                folder = {
+                    id: Date.now(),
+                    name,
+                    icon: selectedFolderIcon
+                };
+                folders.push(folder);
+            }
+            
+            saveMemoFolders(folders);
+            await saveFolderToServer(folder);
+            
+            closeFolderModal();
+            renderMemoFolders();
+            alert('✅ 저장되었습니다!');
+        }
+        
+        async function deleteFolder(folderId) {
+            if (!confirm('폴더와 포함된 모든 메모가 삭제됩니다. 계속하시겠습니까?')) return;
+            
+            const folders = getMemoFolders().filter(f => f.id !== folderId);
+            const memos = getMemos().filter(m => m.folderId !== folderId);
+            
+            saveMemoFolders(folders);
+            saveMemos(memos);
+            await deleteFolderFromServer(folderId);
+            
+            renderMemoFolders();
+        }
+        
+        function showAddMemoModal() {
+            document.getElementById('memoModalTitle').textContent = '📝 새 메모';
+            document.getElementById('editMemoId').value = '';
+            document.getElementById('memoTitleInput').value = '';
+            document.getElementById('memoContentInput').value = '';
+            document.getElementById('memoModal').classList.add('active');
+        }
+        
+        function closeMemoModal() {
+            document.getElementById('memoModal').classList.remove('active');
+        }
+        
+        async function saveMemo() {
+            const title = document.getElementById('memoTitleInput').value.trim();
+            const content = document.getElementById('memoContentInput').value.trim();
+            
+            if (!title) {
+                alert('제목을 입력하세요.');
+                return;
+            }
+            
+            const memos = getMemos();
+            const editId = document.getElementById('editMemoId').value;
+            
+            let memo;
+            if (editId) {
+                const index = memos.findIndex(m => m.id === parseInt(editId));
+                if (index !== -1) {
+                    memos[index].title = title;
+                    memos[index].content = content;
+                    memos[index].updatedAt = new Date().toISOString();
+                    memo = memos[index];
+                }
+            } else {
+                memo = {
+                    id: Date.now(),
+                    folderId: currentFolderId,
+                    title,
+                    content,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                memos.push(memo);
+            }
+            
+            saveMemos(memos);
+            await saveMemoToServer(memo);
+            
+            closeMemoModal();
+            renderMemos();
+            alert('✅ 저장되었습니다!');
+        }
+        
+        function viewMemo(memoId) {
+            const memos = getMemos();
+            const memo = memos.find(m => m.id === memoId);
+            
+            if (!memo) return;
+            
+            currentMemoId = memoId;
+            document.getElementById('memoViewTitle').textContent = memo.title;
+            document.getElementById('memoViewContent').textContent = memo.content;
+            document.getElementById('memoViewModal').classList.add('active');
+        }
+        
+        function closeMemoViewModal() {
+            document.getElementById('memoViewModal').classList.remove('active');
+        }
+        
+        function editCurrentMemo() {
+            const memos = getMemos();
+            const memo = memos.find(m => m.id === currentMemoId);
+            
+            if (!memo) return;
+            
+            closeMemoViewModal();
+            document.getElementById('memoModalTitle').textContent = '📝 메모 수정';
+            document.getElementById('editMemoId').value = memo.id;
+            document.getElementById('memoTitleInput').value = memo.title;
+            document.getElementById('memoContentInput').value = memo.content;
+            document.getElementById('memoModal').classList.add('active');
+        }
+        
+        async function deleteCurrentMemo() {
+            if (!confirm('이 메모를 삭제하시겠습니까?')) return;
+            
+            const memos = getMemos().filter(m => m.id !== currentMemoId);
+            saveMemos(memos);
+            await deleteMemoFromServer(currentMemoId);
+            
+            closeMemoViewModal();
+            renderMemos();
+        }
+        
+        // ========== 문자 메시지 ==========
+        function selectMessage(type) {
+            const messages = {
+                order: '안녕하세요, 떡뜨래입니다.\n주문이 정상적으로 접수되었습니다.\n감사합니다!',
+                delivery: '안녕하세요, 떡뜨래입니다.\n주문하신 상품이 배송 시작되었습니다.',
+                payment: '안녕하세요, 떡뜨래입니다.\n입금 확인 부탁드립니다.\n계좌: 농협 000-0000-0000',
+                thanks: '안녕하세요, 떡뜨래입니다.\n맛있게 드셨나요?\n이용해 주셔서 감사합니다!'
+            };
+            
+            const message = messages[type];
+            if (message) {
+                const smsUrl = `sms:?body=${encodeURIComponent(message)}`;
+                window.location.href = smsUrl;
+            }
+        }
+        
+        // ========== 통계 ==========
+        function updateStats() {
+            const startDate = document.getElementById('statsStartDate').value;
+            const endDate = document.getElementById('statsEndDate').value;
+            
+            const orders = getOrders().filter(o => {
+                return o.deliveryDate >= startDate && o.deliveryDate <= endDate;
+            });
+            
+            const totalOrders = orders.length;
+            const totalRevenue = orders.reduce((sum, o) => sum + parseInt(o.amount || 0), 0);
+            const pending = orders.filter(o => o.paymentStatus === '미입금').length;
+            const completed = orders.filter(o => o.paymentStatus === '입금완료').length;
+            
+            document.getElementById('statTotalOrders').textContent = totalOrders;
+            document.getElementById('statTotalRevenue').textContent = totalRevenue.toLocaleString();
+            document.getElementById('statPending').textContent = pending;
+            document.getElementById('statCompleted').textContent = completed;
+            
+            // 유입경로별 통계
+            const sourceMap = {};
+            orders.forEach(o => {
+                const source = o.source || '미지정';
+                if (!sourceMap[source]) sourceMap[source] = 0;
+                sourceMap[source]++;
+            });
+            
+            const sourceStats = document.getElementById('sourceStats');
+            const sources = Object.entries(sourceMap).sort((a, b) => b[1] - a[1]);
+            
+            if (sources.length === 0) {
+                sourceStats.innerHTML = '<div style="text-align: center; color: #9CA3AF; padding: 20px;">데이터가 없습니다</div>';
+            } else {
+                sourceStats.innerHTML = sources.map(([source, count]) => `
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #F1F5F9;">
+                        <span>${source}</span>
+                        <span style="font-weight: 600; color: #F97316;">${count}건</span>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        // ========== 설정 ==========
+        function openSourceSettings() {
+            const sources = getSources();
+            const list = document.getElementById('sourceList');
+            
+            list.innerHTML = sources.map((s, i) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #F1F5F9;">
+                    <span>${s}</span>
+                    <button class="btn btn-danger btn-small" onclick="removeSource(${i})">삭제</button>
+                </div>
+            `).join('');
+            
+            document.getElementById('sourceModal').classList.add('active');
+        }
+        
+        function closeSourceModal() {
+            document.getElementById('sourceModal').classList.remove('active');
+        }
+        
+        function addSource() {
+            const input = document.getElementById('newSource');
+            const value = input.value.trim();
+            
+            if (!value) return;
+            
+            const sources = getSources();
+            if (!sources.includes(value)) {
+                sources.push(value);
+                saveSources(sources);
+                input.value = '';
+                openSourceSettings();
+            }
+        }
+        
+        function removeSource(index) {
+            const sources = getSources();
+            sources.splice(index, 1);
+            saveSources(sources);
+            openSourceSettings();
+        }
+        
+        function backupData() {
+            const data = {
+                orders: getOrders(),
+                sources: getSources(),
+                memoFolders: getMemoFolders(),
+                memos: getMemos()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `떡뜨래_백업_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function restoreData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (data.orders) localStorage.setItem(STORAGE_KEYS.orders, JSON.stringify(data.orders));
+                    if (data.sources) localStorage.setItem(STORAGE_KEYS.sources, JSON.stringify(data.sources));
+                    if (data.memoFolders) localStorage.setItem(STORAGE_KEYS.memoFolders, JSON.stringify(data.memoFolders));
+                    if (data.memos) localStorage.setItem(STORAGE_KEYS.memos, JSON.stringify(data.memos));
+                    
+                    alert('✅ 데이터가 복원되었습니다!');
+                    renderAll();
+                } catch (error) {
+                    alert('❌ 파일을 읽을 수 없습니다.');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function clearAllData() {
+            if (!confirm('정말 모든 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
+            if (!confirm('마지막 확인입니다. 정말 삭제하시겠습니까?')) return;
+            
+            localStorage.removeItem(STORAGE_KEYS.orders);
+            localStorage.removeItem(STORAGE_KEYS.memoFolders);
+            localStorage.removeItem(STORAGE_KEYS.memos);
+            
+            initializeDefaultData();
+            alert('✅ 모든 데이터가 삭제되었습니다.');
+            renderAll();
+        }
+        
+        // ========== 전체 렌더링 ==========
+        function renderAll() {
+            renderCustomers();
+            renderTodayDelivery();
+            renderOrderStatus();
+            renderMemoFolders();
+            updateStats();
+        }
+        
+        // 클릭 외부 시 자동완성 닫기
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.form-group')) {
+                document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.classList.remove('show'));
+            }
+        });
+    </script>
+</body>
+</html>
+Copy
+Google Apps Script 코드
+이전에 제공한 코드를 사용하거나, 아래 간략화된 버전을 사용하세요:
+
+Copyfunction doGet(e) {
+  const action = e.parameter.action;
+  let result;
+  
+  switch(action) {
+    case 'getAllData':
+      result = {
+        success: true,
+        orders: getSheetData('Orders'),
+        folders: getSheetData('Folders'),
+        memos: getSheetData('Memos')
+      };
+      break;
+    default:
+      result = {success: false, message: 'Unknown action'};
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const action = e.parameter.action;
+  const data = e.parameter.data ? JSON.parse(e.parameter.data) : null;
+  const id = e.parameter.id;
+  let result;
+  
+  switch(action) {
+    case 'saveOrder':
+      result = saveToSheet('Orders', data);
+      break;
+    case 'deleteOrder':
+      result = deleteFromSheet('Orders', id);
+      break;
+    case 'saveFolder':
+      result = saveToSheet('Folders', data);
+      break;
+    case 'deleteFolder':
+      result = deleteFromSheet('Folders', id);
+      break;
+    case 'saveMemo':
+      result = saveToSheet('Memos', data);
+      break;
+    case 'deleteMemo':
+      result = deleteFromSheet('Memos', id);
+      break;
+    default:
+      result = {success: false};
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getOrCreateSheet(name) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    sheet.getRange(1, 1).setValue('data');
+  }
+  return sheet;
+}
+
+function getSheetData(sheetName) {
+  const sheet = getOrCreateSheet(sheetName);
+  const data = sheet.getDataRange().getValues();
+  const result = [];
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0]) {
+      try {
+        result.push(JSON.parse(data[i][0]));
+      } catch(e) {}
+    }
+  }
+  return result;
+}
+
+function saveToSheet(sheetName, item) {
+  const sheet = getOrCreateSheet(sheetName);
+  const data = sheet.getDataRange().getValues();
+  let found = false;
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0]) {
+      try {
+        const existing = JSON.parse(data[i][0]);
+        if (existing.id == item.id) {
+          sheet.getRange(i + 1, 1).setValue(JSON.stringify(item));
+          found = true;
+          break;
+        }
+      } catch(e) {}
+    }
+  }
+  
+  if (!found) {
+    sheet.appendRow([JSON.stringify(item)]);
+  }
+  
+  return {success: true};
+}
+
+function deleteFromSheet(sheetName, id) {
+  const sheet = getOrCreateSheet(sheetName);
+  const data = sheet.getDataRange().getValues();
+  
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (data[i][0]) {
+      try {
+        const existing = JSON.parse(data[i][0]);
+        if (existing.id == id) {
+          sheet.deleteRow(i + 1);
+          return {success: true};
+        }
+      } catch(e) {}
+    }
+  }
+  
+  return {success: false};
+}
 
