@@ -1654,7 +1654,7 @@
             location.reload();
         }
 
-        // 초기화
+                // 초기화
         initializeData();
         populateSelects();
         updateCurrentTimestamp();
@@ -1664,6 +1664,61 @@
         loadAllDataFromServer().then(() => {
             renderAll();
         });
+
+        /* ★ 추가: 자동 동기화 — 60초마다 서버와 병합 */
+        setInterval(async function() {
+            try {
+                var response = await fetch(API_URL + '?action=getAllData');
+                var result = await response.json();
+                if (result.success) {
+                    var changed = false;
+
+                    // 주문 병합
+                    var localOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+                    var serverOrders = result.orders || [];
+                    var merged = {};
+                    localOrders.forEach(function(o) { if(o.id) merged[o.id] = o; });
+                    var beforeCount = Object.keys(merged).length;
+                    serverOrders.forEach(function(o) { if(o.id && !merged[o.id]) { merged[o.id] = o; changed = true; } });
+                    localStorage.setItem('orders', JSON.stringify(Object.values(merged)));
+
+                    // 폴더 병합
+                    var localFolders = JSON.parse(localStorage.getItem('memoFolders') || '[]');
+                    var serverFolders = result.folders || [];
+                    var mergedF = {};
+                    localFolders.forEach(function(f) { if(f.id) mergedF[f.id] = f; });
+                    serverFolders.forEach(function(f) { if(f.id && !mergedF[f.id]) { mergedF[f.id] = f; changed = true; } });
+                    localStorage.setItem('memoFolders', JSON.stringify(Object.values(mergedF)));
+
+                    // 메모 병합
+                    var localMemos = JSON.parse(localStorage.getItem('memos') || '[]');
+                    var serverMemos = result.memos || [];
+                    var mergedM = {};
+                    localMemos.forEach(function(m) { if(m.id) mergedM[m.id] = m; });
+                    serverMemos.forEach(function(m) { if(m.id && !mergedM[m.id]) { mergedM[m.id] = m; changed = true; } });
+                    localStorage.setItem('memos', JSON.stringify(Object.values(mergedM)));
+
+                    // 새 데이터가 있을 때만 화면 갱신
+                    if (changed) {
+                        renderAll();
+                        showSyncStatus('✓ 새 데이터 동기화됨', 'success');
+                    }
+                }
+            } catch(e) {
+                // 네트워크 오류 시 무시 (다음 주기에 재시도)
+            }
+        }, 60000); // 60초(1분) 간격
+
+        /* ★ 추가: 브라우저 탭이 다시 활성화될 때 즉시 동기화 */
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                loadAllDataFromServer().then(function() {
+                    renderAll();
+                });
+            }
+        });
+
     </script>
 </body>
 </html>
+
