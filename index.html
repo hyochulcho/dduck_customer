@@ -205,6 +205,10 @@
         
         .edit-btn { background: #3B82F6; color: white; padding: 8px 16px; border-radius: 8px; font-size: 14px; }
         .edit-btn:hover { background: #2563EB; }
+
+        .order-history-item { border-bottom: 1px solid #e5e7eb; padding: 12px; cursor: pointer; transition: background 0.2s; }
+        .order-history-item:hover { background: #FFF7ED; }
+        .order-history-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -591,9 +595,19 @@
         </div>
     </div>
 
+    <!-- 주문 상세 모달 -->
+    <div id="orderDetailModal" class="modal" onclick="if(event.target===this)closeOrderDetailModal()">
+        <div class="modal-content">
+            <div class="bg-green-500 text-white p-4 flex justify-between items-center">
+                <h3 class="text-lg font-bold">📦 주문 상세정보</h3>
+                <button onclick="closeOrderDetailModal()" class="text-2xl font-bold">&times;</button>
+            </div>
+            <div class="p-4" id="orderDetailContent"></div>
+        </div>
+    </div>
+
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbwqx534CTXeZDxROy9l2KtUxDi2ZcIF97kLyHISQnKYX0fQc5Dv1L1rEimvLzGa5AlFPg/exec';
-
 
         let currentStatusOrders = [];
         let filteredCustomers = [];
@@ -611,15 +625,12 @@
         }
 
         // ========== 서버 통신 ==========
-
-        /* ★ 수정됨: 병합(merge) 방식으로 변경 — 로컬 데이터를 덮어쓰지 않음 */
         async function loadAllDataFromServer() {
             showSyncStatus('서버에서 불러오는 중...', 'loading');
             try {
                 const response = await fetch(API_URL + '?action=getAllData');
                 const result = await response.json();
                 if (result.success) {
-                    // 주문 병합: 서버 + 로컬, ID 기준 중복제거 (로컬 우선)
                     var localOrders = JSON.parse(localStorage.getItem('orders') || '[]');
                     var serverOrders = result.orders || [];
                     var mergedOrders = {};
@@ -627,7 +638,6 @@
                     localOrders.forEach(function(o) { if(o.id) mergedOrders[o.id] = o; });
                     localStorage.setItem('orders', JSON.stringify(Object.values(mergedOrders)));
 
-                    // 폴더 병합
                     var localFolders = JSON.parse(localStorage.getItem('memoFolders') || '[]');
                     var serverFolders = result.folders || [];
                     var mergedFolders = {};
@@ -635,7 +645,6 @@
                     localFolders.forEach(function(f) { if(f.id) mergedFolders[f.id] = f; });
                     localStorage.setItem('memoFolders', JSON.stringify(Object.values(mergedFolders)));
 
-                    // 메모 병합
                     var localMemos = JSON.parse(localStorage.getItem('memos') || '[]');
                     var serverMemos = result.memos || [];
                     var mergedMemos = {};
@@ -643,7 +652,7 @@
                     localMemos.forEach(function(m) { if(m.id) mergedMemos[m.id] = m; });
                     localStorage.setItem('memos', JSON.stringify(Object.values(mergedMemos)));
 
-                    showSyncStatus('✓ 동기화 완료! (병합)', 'success');
+                    showSyncStatus('✓ 동기화 완료!', 'success');
                     return true;
                 }
             } catch (error) {
@@ -705,20 +714,17 @@
         async function syncFromServer() {
             await loadAllDataFromServer();
             renderAll();
-            alert('✓ 서버에서 데이터를 불러왔습니다! (기존 로컬 데이터와 병합됨)');
+            alert('✓ 서버에서 데이터를 불러왔습니다!');
         }
 
-        /* ★ 수정됨: 업로드 전 서버 데이터와 병합 + 자동 백업 */
         async function syncAllToServer() {
-            // 업로드 전 자동 백업을 localStorage에 저장
             try {
                 var backupObj = {
                     orders: JSON.parse(localStorage.getItem('orders') || '[]'),
                     memoFolders: JSON.parse(localStorage.getItem('memoFolders') || '[]'),
                     memos: JSON.parse(localStorage.getItem('memos') || '[]'),
                     sources: JSON.parse(localStorage.getItem('sources') || '[]'),
-                    backupDate: new Date().toISOString(),
-                    type: 'auto-backup-before-sync'
+                    backupDate: new Date().toISOString()
                 };
                 localStorage.setItem('lastAutoBackup', JSON.stringify(backupObj));
             } catch(e) {}
@@ -727,12 +733,10 @@
             var count = 0;
 
             try {
-                // 먼저 서버 데이터를 가져와서 병합
                 var response = await fetch(API_URL + '?action=getAllData');
                 var serverResult = await response.json();
 
                 if (serverResult.success) {
-                    // 주문 병합
                     var localOrders = JSON.parse(localStorage.getItem('orders') || '[]');
                     var serverOrders = serverResult.orders || [];
                     var merged = {};
@@ -748,7 +752,6 @@
                     }
                     localStorage.setItem('orders', JSON.stringify(allOrders));
 
-                    // 폴더 병합 및 업로드
                     var localFolders = JSON.parse(localStorage.getItem('memoFolders') || '[]');
                     var serverFolders = serverResult.folders || [];
                     var mergedF = {};
@@ -760,7 +763,6 @@
                     }
                     localStorage.setItem('memoFolders', JSON.stringify(allFolders));
 
-                    // 메모 병합 및 업로드
                     var localMemos = JSON.parse(localStorage.getItem('memos') || '[]');
                     var serverMemos = serverResult.memos || [];
                     var mergedM = {};
@@ -774,13 +776,13 @@
                 }
             } catch(e) {
                 showSyncStatus('✗ 서버 연결 실패', 'error');
-                alert('서버 연결에 실패했습니다. 다시 시도해주세요.');
+                alert('서버 연결에 실패했습니다.');
                 return;
             }
 
             showSyncStatus('✓ 완료!', 'success');
             renderAll();
-            alert('✓ ' + count + '건 업로드 완료! (서버 데이터와 병합됨)');
+            alert('✓ ' + count + '건 업로드 완료!');
         }
 
         // ========== 기본 함수 ==========
@@ -867,7 +869,6 @@
             return Object.values(customers);
         }
 
-        // 전화번호로 고객 검색
         function searchCustomer(phone) {
             const c = generateCustomers().find(c => c.phone === phone);
             const div = document.getElementById('customerInfo');
@@ -880,7 +881,6 @@
             }
         }
 
-        // 이름으로 고객 검색
         function searchCustomerByName(name) {
             if (!name || name.length < 2) {
                 document.getElementById('customerInfoByName').innerHTML = '';
@@ -923,7 +923,6 @@
             }
         }
 
-        // 고객 정보에서 바로 주문입력으로 이동
         function goToOrderFromCustomer() {
             const phone = document.getElementById('editCustomerPhone').value;
             const name = document.getElementById('editCustomerName').value;
@@ -932,13 +931,11 @@
             closeEditCustomerModal();
             closeCustomerModal();
             
-            // 주문입력 탭으로 이동
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.getElementById('tab-order').classList.add('active');
             document.querySelector('.nav-tab').classList.add('active');
             
-            // 고객 정보 채우기
             document.getElementById('ordererPhone').value = phone;
             document.getElementById('ordererName').value = name;
             document.getElementById('ordererAddress').value = address;
@@ -1060,7 +1057,7 @@
             currentViewingCustomerPhone = phone;
             const customers = generateCustomers();
             const customer = customers.find(c => c.phone === phone);
-            const orders = getOrders().filter(o => String(o.ordererPhone || o.phone) === phone);
+            const orders = getOrders().filter(o => String(o.ordererPhone || o.phone) === phone).sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
             
             if (!customer) return;
             
@@ -1079,33 +1076,88 @@
                 '</div>';
             
             document.getElementById('modalOrderHistory').innerHTML = orders.length ? 
-                '<h4 class="font-bold mb-3">📋 주문 내역</h4>' +
+                '<h4 class="font-bold mb-3">📋 주문 내역 <span class="text-sm text-gray-500">(클릭하면 상세정보)</span></h4>' +
                 orders.map(o => 
-                    '<div class="border-b py-3">' +
-                    '<div class="flex justify-between"><span class="font-bold">' + o.menu + '</span><span class="text-orange-600">' + Number(o.amount).toLocaleString() + '원</span></div>' +
-                    '<div class="text-sm text-gray-600">배송: ' + (o.deliveryDate || '').split('T')[0] + ' ' + (o.deliveryTime || '') + '</div>' +
-                    '<div class="text-sm"><span class="badge ' + (o.paymentStatus === '완료' ? 'badge-success' : 'badge-danger') + '">' + o.paymentStatus + '</span></div>' +
-                    (o.memo ? '<div class="text-sm text-gray-500 mt-1">💬 ' + o.memo + '</div>' : '') +
+                    '<div class="order-history-item" onclick="showOrderDetail(' + o.id + ')">' +
+                    '<div class="flex justify-between items-start"><span class="font-bold">' + (o.menu || '').substring(0, 30) + (o.menu && o.menu.length > 30 ? '...' : '') + '</span><span class="text-orange-600 font-semibold">' + Number(o.amount).toLocaleString() + '원</span></div>' +
+                    '<div class="text-sm text-gray-600 mt-1">📅 ' + (o.deliveryDate || '').split('T')[0] + ' ' + (o.deliveryTime || '') + '</div>' +
+                    '<div class="text-sm mt-1">' +
+                    '<span class="badge ' + (o.paymentStatus === '완료' ? 'badge-success' : 'badge-danger') + '">' + (o.paymentStatus || '미완료') + '</span>' +
+                    (o.receiverName && o.receiverName !== o.ordererName ? ' <span class="text-blue-600">→ ' + o.receiverName + '</span>' : '') +
+                    '</div>' +
                     '</div>'
-                ).join('') : '<div class="text-gray-500 text-center">주문 이력 없음</div>';
+                ).join('') : '<div class="text-gray-500 text-center py-4">주문 이력 없음</div>';
             
             document.getElementById('customerModal').classList.add('show');
         }
 
-        // 고객 이력에서 바로 주문입력으로 이동
+        // 주문 상세 보기
+        function showOrderDetail(orderId) {
+            const orders = getOrders();
+            const order = orders.find(o => o.id == orderId);
+            if (!order) return;
+            
+            document.getElementById('orderDetailContent').innerHTML = 
+                '<div class="info-section mb-4">' +
+                '<div class="info-section-title">👤 주문자 정보</div>' +
+                '<div class="mb-2"><strong>이름:</strong> ' + (order.ordererName || order.name || '-') + '</div>' +
+                '<div class="mb-2"><strong>전화번호:</strong> ' + (order.ordererPhone || order.phone || '-') + '</div>' +
+                '<div><strong>주소:</strong> ' + (order.ordererAddress || order.address || '-') + '</div>' +
+                '</div>' +
+                
+                '<div class="info-section mb-4">' +
+                '<div class="info-section-title">📦 받는 사람 정보</div>' +
+                '<div class="mb-2"><strong>이름:</strong> ' + (order.receiverName || order.ordererName || '-') + '</div>' +
+                '<div class="mb-2"><strong>전화번호:</strong> ' + (order.receiverPhone || order.ordererPhone || '-') + '</div>' +
+                '<div><strong>배송 주소:</strong> ' + (order.receiverAddress || order.ordererAddress || '-') + '</div>' +
+                '</div>' +
+                
+                '<div class="info-section mb-4">' +
+                '<div class="info-section-title">🚚 배송 정보</div>' +
+                '<div class="mb-2"><strong>배송 날짜:</strong> ' + (order.deliveryDate || '-') + '</div>' +
+                '<div><strong>배송 시간:</strong> ' + (order.deliveryTime || '-') + '</div>' +
+                '</div>' +
+                
+                '<div class="info-section mb-4">' +
+                '<div class="info-section-title">📋 주문 내용</div>' +
+                '<div class="mb-2"><strong>주문 품목:</strong></div>' +
+                '<div class="bg-white p-3 rounded border mb-2" style="white-space:pre-wrap;">' + (order.menu || '-') + '</div>' +
+                '<div class="mb-2"><strong>주문 금액:</strong> <span class="text-orange-600 font-bold">' + Number(order.amount || 0).toLocaleString() + '원</span></div>' +
+                '<div><strong>유입 경로:</strong> ' + (order.source || '-') + '</div>' +
+                '</div>' +
+                
+                '<div class="info-section mb-4">' +
+                '<div class="info-section-title">💳 결제 정보</div>' +
+                '<div class="mb-2"><strong>결제 상태:</strong> <span class="badge ' + (order.paymentStatus === '완료' ? 'badge-success' : 'badge-danger') + '">' + (order.paymentStatus || '미완료') + '</span></div>' +
+                '<div><strong>결제 수단:</strong> ' + (order.paymentMethod || '-') + '</div>' +
+                '</div>' +
+                
+                (order.memo ? 
+                '<div class="info-section mb-4">' +
+                '<div class="info-section-title">💬 메모</div>' +
+                '<div class="bg-yellow-50 p-3 rounded">' + order.memo + '</div>' +
+                '</div>' : '') +
+                
+                '<div class="text-sm text-gray-500 text-center">주문 접수: ' + (order.orderDate ? new Date(order.orderDate).toLocaleString('ko-KR') : '-') + '</div>';
+            
+            document.getElementById('orderDetailModal').classList.add('show');
+        }
+
+        function closeOrderDetailModal() {
+            document.getElementById('orderDetailModal').classList.remove('show');
+        }
+
         function goToOrderFromHistory(phone) {
             const customer = generateCustomers().find(c => c.phone === phone);
             if (!customer) return;
             
             closeCustomerModal();
             
-            // 주문입력 탭으로 이동
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.getElementById('tab-order').classList.add('active');
             document.querySelector('.nav-tab').classList.add('active');
             
-            // 고객 정보 채우기
             document.getElementById('ordererPhone').value = customer.phone;
             document.getElementById('ordererName').value = customer.name;
             document.getElementById('ordererAddress').value = customer.lastAddress || '';
@@ -1118,12 +1170,10 @@
             currentViewingCustomerPhone = null;
         }
 
-        // ========== 고객 정보 수정 ==========
         function openEditCustomerModal(phone) {
             const customer = generateCustomers().find(c => c.phone === phone);
             if (!customer) return;
             
-            // 해당 고객의 최신 주문에서 메모 가져오기
             const orders = getOrders().filter(o => String(o.ordererPhone || o.phone) === phone);
             const latestOrder = orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))[0];
             
@@ -1155,7 +1205,6 @@
             let orders = getOrders();
             let updated = false;
             
-            // 해당 고객의 모든 주문 정보 업데이트
             orders = orders.map(o => {
                 if (String(o.ordererPhone || o.phone) === originalPhone) {
                     updated = true;
@@ -1173,7 +1222,6 @@
             if (updated) {
                 localStorage.setItem('orders', JSON.stringify(orders));
                 
-                // 서버에도 업데이트
                 showSyncStatus('저장 중...', 'loading');
                 for (const order of orders.filter(o => String(o.ordererPhone) === newPhone)) {
                     await saveOrderToServer(order);
@@ -1208,89 +1256,274 @@
 
         function renderDeliveries() {
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('todayDate').textContent = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' });
+            document.getElementById('todayDate').textContent = today;
             
             let orders = getOrders().filter(o => o.deliveryDate === today);
-            const hide = document.getElementById('hideCompleted').checked;
-            const done = JSON.parse(localStorage.getItem('completedOrders') || '{}');
-            if (hide) orders = orders.filter(o => !done[o.id]);
+            if (document.getElementById('hideCompleted').checked) {
+                orders = orders.filter(o => o.deliveryStatus !== '완료');
+            }
+            orders.sort((a, b) => {
+                const ta = parseInt(a.deliveryTime) || 0;
+                const tb = parseInt(b.deliveryTime) || 0;
+                return ta - tb;
+            });
 
             document.getElementById('deliveryList').innerHTML = orders.length ? orders.map(o => 
-                '<div class="order-card '+(done[o.id]?'opacity-50':'')+'" style="'+(o.paymentStatus==='미완료'?'border-left:4px solid #EF4444;':'')+'">'+
-                '<div class="order-card-header"><span>🚚 '+o.deliveryTime+'</span><label class="flex items-center gap-2"><input type="checkbox" '+(done[o.id]?'checked':'')+' onchange="toggleComplete('+o.id+')"> 완료</label></div>'+
-                '<div class="order-card-body"><div class="flex justify-between mb-2"><span class="font-bold text-lg">'+o.menu+'</span><span class="font-bold text-orange-600">'+Number(o.amount).toLocaleString()+'원</span></div>'+
-                '<div class="text-sm text-gray-600">📦 '+(o.receiverName||o.name)+' ('+(o.receiverPhone||o.phone)+')</div>'+
-                '<div class="text-sm text-gray-600">📍 '+(o.receiverAddress||o.deliveryAddress)+'</div>'+
-                '<div class="mt-2"><span class="badge '+(o.paymentStatus==='완료'?'badge-success':'badge-danger')+'">'+o.paymentStatus+'</span></div>'+
-                (o.memo?'<div class="mt-2 bg-yellow-50 p-2 rounded-lg text-sm">💬 '+o.memo+'</div>':'')+
-                '</div></div>'
-            ).join('') : '<div class="text-center text-gray-500 py-8">오늘 배송 없음</div>';
+                '<div class="order-card">' +
+                '<div class="order-card-header"><span>' + (o.deliveryTime || '') + '</span><span class="badge ' + (o.deliveryStatus === '완료' ? 'badge-success' : 'badge-danger') + '">' + (o.deliveryStatus || '대기') + '</span></div>' +
+                '<div class="order-card-body">' +
+                '<div class="font-bold text-lg mb-1">' + (o.receiverName || o.ordererName || '') + '</div>' +
+                '<div class="text-gray-600 mb-1">' + (o.receiverPhone || o.ordererPhone || '') + '</div>' +
+                '<div class="text-gray-600 mb-2">' + (o.receiverAddress || o.ordererAddress || '') + '</div>' +
+                '<div class="bg-orange-50 p-2 rounded mb-2">' + (o.menu || '') + '</div>' +
+                '<div class="flex justify-between items-center">' +
+                '<span class="font-bold text-orange-600">' + Number(o.amount).toLocaleString() + '원</span>' +
+                '<button onclick="toggleDeliveryStatus(' + o.id + ')" class="px-4 py-2 ' + (o.deliveryStatus === '완료' ? 'bg-gray-500' : 'bg-green-500') + ' text-white rounded-lg text-sm">' + (o.deliveryStatus === '완료' ? '완료취소' : '배송완료') + '</button>' +
+                '</div></div></div>'
+            ).join('') : '<div class="text-center text-gray-500 py-8">오늘 배송 예정이 없습니다</div>';
         }
 
-        function toggleComplete(id) {
-            const done = JSON.parse(localStorage.getItem('completedOrders') || '{}');
-            done[id] = !done[id];
-            localStorage.setItem('completedOrders', JSON.stringify(done));
-            renderDeliveries();
+        async function toggleDeliveryStatus(id) {
+            let orders = getOrders();
+            const order = orders.find(o => o.id === id);
+            if (order) {
+                order.deliveryStatus = order.deliveryStatus === '완료' ? '대기' : '완료';
+                localStorage.setItem('orders', JSON.stringify(orders));
+                await saveOrderToServer(order);
+                renderDeliveries();
+            }
+        }
+
+        function renderStats() {
+            const orders = getOrders();
+            const total = orders.length;
+            const revenue = orders.reduce((s, o) => s + (Number(o.amount) || 0), 0);
+            const paid = orders.filter(o => o.paymentStatus === '완료').length;
+            const unpaid = total - paid;
+
+            document.getElementById('statOrders').textContent = total;
+            document.getElementById('statRevenue').textContent = revenue.toLocaleString() + '원';
+            document.getElementById('statPaid').textContent = paid;
+            document.getElementById('statUnpaid').textContent = unpaid;
+
+            const sources = {};
+            orders.forEach(o => {
+                const s = o.source || '기타';
+                sources[s] = (sources[s] || 0) + 1;
+            });
+            const max = Math.max(...Object.values(sources), 1);
+            document.getElementById('sourceChart').innerHTML = Object.entries(sources)
+                .sort((a, b) => b[1] - a[1])
+                .map(([k, v]) => '<div class="bar-item"><span class="w-20 text-sm">' + k + '</span><div class="bar" style="width:' + (v / max * 100) + '%;"></div><span class="text-sm">' + v + '건</span></div>').join('');
         }
 
         function loadOrderStatus() {
-            const s = document.getElementById('statusStartDate').value;
-            const e = document.getElementById('statusEndDate').value;
-            if (!s || !e) { alert('날짜 선택'); return; }
-            currentStatusOrders = getOrders().filter(o => o.deliveryDate >= s && o.deliveryDate <= e);
-            renderOrderStatus();
+            const start = document.getElementById('statusStartDate').value;
+            const end = document.getElementById('statusEndDate').value;
+            currentStatusOrders = getOrders().filter(o => o.deliveryDate >= start && o.deliveryDate <= end);
+            renderStatusTable();
         }
 
         function loadAllOrderStatus() {
             currentStatusOrders = getOrders();
-            renderOrderStatus();
+            renderStatusTable();
         }
 
-        function renderOrderStatus() {
-            const orders = currentStatusOrders;
-            const total = orders.reduce((s, o) => s + (Number(o.amount)||0), 0);
+        function renderStatusTable() {
+            const orders = currentStatusOrders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+            const total = orders.reduce((s, o) => s + (Number(o.amount) || 0), 0);
+            const paid = orders.filter(o => o.paymentStatus === '완료').reduce((s, o) => s + (Number(o.amount) || 0), 0);
+
             document.getElementById('statusSummary').innerHTML = 
-                '<div class="stat-card rounded-xl p-3"><div class="text-sm">총 주문</div><div class="text-xl font-bold text-orange-600">'+orders.length+'건</div></div>'+
-                '<div class="stat-card rounded-xl p-3"><div class="text-sm">총 매출</div><div class="text-xl font-bold text-orange-600">'+total.toLocaleString()+'원</div></div>';
-            
+                '<div class="bg-white rounded-lg p-3 shadow"><div class="text-sm text-gray-600">조회 건수</div><div class="text-xl font-bold text-orange-600">' + orders.length + '건</div></div>' +
+                '<div class="bg-white rounded-lg p-3 shadow"><div class="text-sm text-gray-600">총 금액</div><div class="text-xl font-bold text-orange-600">' + total.toLocaleString() + '원</div></div>';
+
             document.getElementById('statusTableContainer').innerHTML = orders.length ? 
-                '<table class="order-status-table"><thead><tr><th>날짜</th><th>고객</th><th>메뉴</th><th>금액</th><th>결제</th></tr></thead><tbody>'+
-                orders.map(o => '<tr><td>'+o.deliveryDate+'</td><td>'+(o.receiverName||o.name)+'</td><td>'+o.menu+'</td><td>'+Number(o.amount).toLocaleString()+'원</td><td><span class="badge '+(o.paymentStatus==='완료'?'badge-success':'badge-danger')+'">'+o.paymentStatus+'</span></td></tr>').join('')+
-                '</tbody></table>' : '<div class="text-center text-gray-500 py-8">주문 없음</div>';
+                '<table class="order-status-table"><thead><tr><th>날짜</th><th>고객</th><th>금액</th><th>결제</th></tr></thead><tbody>' +
+                orders.map(o => '<tr onclick="showOrderDetail(' + o.id + ')" style="cursor:pointer;"><td>' + (o.deliveryDate || '').substring(5) + '</td><td>' + (o.ordererName || '') + '</td><td>' + Number(o.amount).toLocaleString() + '</td><td><span class="badge ' + (o.paymentStatus === '완료' ? 'badge-success' : 'badge-danger') + '">' + (o.paymentStatus || '미완료') + '</span></td></tr>').join('') +
+                '</tbody></table>' : '<div class="text-center text-gray-500 py-8">데이터 없음</div>';
         }
 
-        // ========== 메모장 기능 ==========
+        function renderSettings() {
+            const sources = getSources();
+            document.getElementById('sourceList').innerHTML = sources.map((s, i) => 
+                '<div class="flex justify-between items-center py-2 border-b"><span>' + s + '</span><button onclick="deleteSource(' + i + ')" class="text-red-500 text-sm">삭제</button></div>'
+            ).join('');
+        }
+
+        function addSource() {
+            const name = prompt('새 유입경로 이름:');
+            if (name && name.trim()) {
+                const sources = getSources();
+                sources.push(name.trim());
+                localStorage.setItem('sources', JSON.stringify(sources));
+                renderSettings();
+                populateSelects();
+            }
+        }
+
+        function deleteSource(index) {
+            if (!confirm('이 유입경로를 삭제하시겠습니까?')) return;
+            const sources = getSources();
+            sources.splice(index, 1);
+            localStorage.setItem('sources', JSON.stringify(sources));
+            renderSettings();
+            populateSelects();
+        }
+
+        function renderMessageTab() {
+            filteredCustomers = generateCustomers();
+            renderMessageCustomers();
+        }
+
+        function applyMessageFilters() {
+            const source = document.getElementById('filterSource').value;
+            const orders = getOrders();
+            
+            let phones = new Set();
+            orders.forEach(o => {
+                if (!source || o.source === source) {
+                    phones.add(o.ordererPhone || o.phone);
+                }
+            });
+            
+            filteredCustomers = generateCustomers().filter(c => phones.has(c.phone));
+            selectedCustomers.clear();
+            renderMessageCustomers();
+        }
+
+        function renderMessageCustomers() {
+            document.getElementById('messageCustomerList').innerHTML = filteredCustomers.map(c => 
+                '<div class="customer-select-card ' + (selectedCustomers.has(c.phone) ? 'selected' : '') + '" onclick="toggleCustomerSelect(\'' + c.phone + '\')">' +
+                '<div class="font-bold">' + (c.name || '이름없음') + '</div>' +
+                '<div class="text-sm text-gray-600">' + c.phone + '</div>' +
+                '</div>'
+            ).join('') || '<div class="text-center text-gray-500 py-4">고객이 없습니다</div>';
+            document.getElementById('selectedCount').textContent = selectedCustomers.size;
+        }
+
+        function toggleCustomerSelect(phone) {
+            if (selectedCustomers.has(phone)) selectedCustomers.delete(phone);
+            else selectedCustomers.add(phone);
+            renderMessageCustomers();
+        }
+
+        function selectAllCustomers() {
+            filteredCustomers.forEach(c => selectedCustomers.add(c.phone));
+            renderMessageCustomers();
+        }
+
+        function deselectAllCustomers() {
+            selectedCustomers.clear();
+            renderMessageCustomers();
+        }
+
+        function copyPhoneNumbers() {
+            if (selectedCustomers.size === 0) {
+                alert('선택된 고객이 없습니다');
+                return;
+            }
+            const phones = Array.from(selectedCustomers).join(', ');
+            navigator.clipboard.writeText(phones).then(() => {
+                alert('✓ ' + selectedCustomers.size + '개 전화번호 복사됨!');
+            });
+        }
+
+        // ========== 메모장 ==========
         function renderMemoFolders() {
             const folders = getMemoFolders();
             const memos = getMemos();
             
             document.getElementById('folderList').innerHTML = folders.length ? folders.map(f => {
-                const memoCount = memos.filter(m => m.folderId == f.id).length;
-                return '<div class="folder-card" onclick="openFolder('+f.id+')">'+
-                    '<div class="flex justify-between items-center">'+
-                    '<div class="flex items-center">'+
-                    '<span class="folder-icon">'+f.icon+'</span>'+
-                    '<div>'+
-                    '<div class="font-bold text-lg">'+f.name+'</div>'+
-                    '<div class="text-sm text-gray-500">메모 '+memoCount+'개</div>'+
-                    '</div>'+
-                    '</div>'+
-                    '<div class="flex gap-2">'+
-                    '<button onclick="event.stopPropagation(); editFolder('+f.id+')" class="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg">수정</button>'+
-                    '<button onclick="event.stopPropagation(); deleteFolder('+f.id+')" class="px-3 py-1 bg-red-500 text-white text-sm rounded-lg">삭제</button>'+
-                    '</div>'+
-                    '</div>'+
-                    '</div>';
+                const count = memos.filter(m => m.folderId === f.id).length;
+                return '<div class="folder-card" onclick="openFolder(' + f.id + ')">' +
+                    '<div class="flex justify-between items-center">' +
+                    '<div class="flex items-center"><span class="folder-icon">' + (f.icon || '📁') + '</span><span class="font-bold">' + f.name + '</span></div>' +
+                    '<div class="flex items-center gap-2">' +
+                    '<span class="text-sm text-gray-500">' + count + '개</span>' +
+                    '<button onclick="event.stopPropagation();editFolder(' + f.id + ')" class="text-blue-500 text-sm">수정</button>' +
+                    '<button onclick="event.stopPropagation();deleteFolder(' + f.id + ')" class="text-red-500 text-sm">삭제</button>' +
+                    '</div></div></div>';
             }).join('') : '<div class="text-center text-gray-500 py-8">폴더가 없습니다. 폴더를 추가해주세요.</div>';
         }
 
-        function openFolder(folderId) {
-            currentFolderId = folderId;
-            const folder = getMemoFolders().find(f => f.id == folderId);
+        function showAddFolderModal() {
+            document.getElementById('folderModalTitle').textContent = '새 폴더';
+            document.getElementById('folderNameInput').value = '';
+            document.getElementById('selectedFolderIcon').value = '📁';
+            document.getElementById('editingFolderId').value = '';
+            document.querySelectorAll('.folder-icon-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById('folderModal').classList.add('show');
+        }
+
+        function selectFolderIcon(icon) {
+            document.getElementById('selectedFolderIcon').value = icon;
+            document.querySelectorAll('.folder-icon-btn').forEach(b => {
+                b.classList.toggle('selected', b.textContent === icon);
+            });
+        }
+
+        function closeFolderModal() {
+            document.getElementById('folderModal').classList.remove('show');
+        }
+
+        async function saveFolder() {
+            const name = document.getElementById('folderNameInput').value.trim();
+            if (!name) {
+                alert('폴더 이름을 입력하세요');
+                return;
+            }
+            
+            const icon = document.getElementById('selectedFolderIcon').value || '📁';
+            const editId = document.getElementById('editingFolderId').value;
+            let folders = getMemoFolders();
+            
+            if (editId) {
+                folders = folders.map(f => f.id == editId ? {...f, name, icon} : f);
+            } else {
+                const folder = { id: Date.now(), name, icon };
+                folders.push(folder);
+            }
+            
+            localStorage.setItem('memoFolders', JSON.stringify(folders));
+            const folderToSave = folders.find(f => editId ? f.id == editId : f.name === name);
+            await saveFolderToServer(folderToSave);
+            
+            closeFolderModal();
+            renderMemoFolders();
+        }
+
+        function editFolder(id) {
+            const folder = getMemoFolders().find(f => f.id === id);
             if (!folder) return;
             
-            document.getElementById('currentFolderName').textContent = folder.icon + ' ' + folder.name;
+            document.getElementById('folderModalTitle').textContent = '폴더 수정';
+            document.getElementById('folderNameInput').value = folder.name;
+            document.getElementById('selectedFolderIcon').value = folder.icon || '📁';
+            document.getElementById('editingFolderId').value = id;
+            document.querySelectorAll('.folder-icon-btn').forEach(b => {
+                b.classList.toggle('selected', b.textContent === (folder.icon || '📁'));
+            });
+            document.getElementById('folderModal').classList.add('show');
+        }
+
+        async function deleteFolder(id) {
+            if (!confirm('이 폴더와 안의 모든 메모를 삭제하시겠습니까?')) return;
+            
+            let folders = getMemoFolders().filter(f => f.id !== id);
+            let memos = getMemos().filter(m => m.folderId !== id);
+            
+            localStorage.setItem('memoFolders', JSON.stringify(folders));
+            localStorage.setItem('memos', JSON.stringify(memos));
+            await deleteFolderFromServer(id);
+            
+            renderMemoFolders();
+        }
+
+        function openFolder(id) {
+            currentFolderId = id;
+            const folder = getMemoFolders().find(f => f.id === id);
+            document.getElementById('currentFolderName').textContent = (folder?.icon || '📁') + ' ' + (folder?.name || '');
             document.getElementById('memoFolderView').style.display = 'none';
             document.getElementById('memoDetailView').style.display = 'block';
             renderMemos();
@@ -1300,114 +1533,18 @@
             currentFolderId = null;
             document.getElementById('memoFolderView').style.display = 'block';
             document.getElementById('memoDetailView').style.display = 'none';
-            renderMemoFolders();
         }
 
         function renderMemos() {
-            const memos = getMemos().filter(m => m.folderId == currentFolderId).sort((a, b) => b.updatedAt - a.updatedAt);
+            const memos = getMemos().filter(m => m.folderId === currentFolderId).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
             
-            document.getElementById('memoList').innerHTML = memos.length ? memos.map(m => {
-                const date = new Date(m.updatedAt).toLocaleDateString('ko-KR');
-                const preview = m.content.substring(0, 50) + (m.content.length > 50 ? '...' : '');
-                return '<div class="memo-card" onclick="viewMemo('+m.id+')">'+
-                    '<div class="font-bold text-lg mb-1">'+m.title+'</div>'+
-                    '<div class="memo-preview">'+preview+'</div>'+
-                    '<div class="memo-date mt-2">'+date+'</div>'+
-                    '</div>';
-            }).join('') : '<div class="text-center text-gray-500 py-8">메모가 없습니다. 메모를 추가해주세요.</div>';
-        }
-
-        function showAddFolderModal() {
-            document.getElementById('folderModalTitle').textContent = '새 폴더';
-            document.getElementById('folderNameInput').value = '';
-            document.getElementById('selectedFolderIcon').value = '📁';
-            document.getElementById('editingFolderId').value = '';
-            document.querySelectorAll('.folder-icon-btn').forEach(btn => btn.classList.remove('selected'));
-            document.getElementById('folderModal').classList.add('show');
-        }
-
-        function editFolder(folderId) {
-            const folder = getMemoFolders().find(f => f.id == folderId);
-            if (!folder) return;
-            
-            document.getElementById('folderModalTitle').textContent = '폴더 수정';
-            document.getElementById('folderNameInput').value = folder.name;
-            document.getElementById('selectedFolderIcon').value = folder.icon;
-            document.getElementById('editingFolderId').value = folderId;
-            document.querySelectorAll('.folder-icon-btn').forEach(btn => {
-                btn.classList.toggle('selected', btn.textContent.trim() === folder.icon);
-            });
-            document.getElementById('folderModal').classList.add('show');
-        }
-
-        function closeFolderModal() {
-            document.getElementById('folderModal').classList.remove('show');
-        }
-
-        function selectFolderIcon(icon) {
-            document.getElementById('selectedFolderIcon').value = icon;
-            document.querySelectorAll('.folder-icon-btn').forEach(btn => {
-                btn.classList.toggle('selected', btn.textContent.trim() === icon);
-            });
-        }
-
-        async function saveFolder() {
-            const name = document.getElementById('folderNameInput').value.trim();
-            const icon = document.getElementById('selectedFolderIcon').value;
-            const editingId = document.getElementById('editingFolderId').value;
-            
-            if (!name) { alert('폴더 이름을 입력하세요'); return; }
-            
-            let folders = getMemoFolders();
-            let folder;
-            
-            if (editingId) {
-                const idx = folders.findIndex(f => f.id == editingId);
-                if (idx !== -1) {
-                    folders[idx].name = name;
-                    folders[idx].icon = icon;
-                    folder = folders[idx];
-                }
-            } else {
-                folder = {
-                    id: Date.now(),
-                    name: name,
-                    icon: icon
-                };
-                folders.push(folder);
-            }
-            
-            localStorage.setItem('memoFolders', JSON.stringify(folders));
-            await saveFolderToServer(folder);
-            
-            closeFolderModal();
-            renderMemoFolders();
-            showSyncStatus('✓ 폴더 저장 완료!', 'success');
-        }
-
-        async function deleteFolder(folderId) {
-            const memos = getMemos().filter(m => m.folderId == folderId);
-            if (memos.length > 0) {
-                if (!confirm('이 폴더에 '+memos.length+'개의 메모가 있습니다. 폴더와 함께 모두 삭제하시겠습니까?')) return;
-            } else {
-                if (!confirm('이 폴더를 삭제하시겠습니까?')) return;
-            }
-            
-            let folders = getMemoFolders().filter(f => f.id != folderId);
-            localStorage.setItem('memoFolders', JSON.stringify(folders));
-            await deleteFolderFromServer(folderId);
-            
-            let allMemos = getMemos();
-            const memosToDelete = allMemos.filter(m => m.folderId == folderId);
-            allMemos = allMemos.filter(m => m.folderId != folderId);
-            localStorage.setItem('memos', JSON.stringify(allMemos));
-            
-            for (const memo of memosToDelete) {
-                await deleteMemoFromServer(memo.id);
-            }
-            
-            renderMemoFolders();
-            showSyncStatus('✓ 삭제 완료!', 'success');
+            document.getElementById('memoList').innerHTML = memos.length ? memos.map(m => 
+                '<div class="memo-card" onclick="viewMemo(' + m.id + ')">' +
+                '<div class="font-bold mb-1">' + (m.title || '제목 없음') + '</div>' +
+                '<div class="memo-preview">' + (m.content || '').substring(0, 50) + '</div>' +
+                '<div class="memo-date">' + new Date(m.updatedAt).toLocaleDateString('ko-KR') + '</div>' +
+                '</div>'
+            ).join('') : '<div class="text-center text-gray-500 py-8">메모가 없습니다</div>';
         }
 
         function showAddMemoModal() {
@@ -1425,66 +1562,53 @@
         async function saveMemo() {
             const title = document.getElementById('memoTitleInput').value.trim();
             const content = document.getElementById('memoContentInput').value.trim();
-            const editingId = document.getElementById('editingMemoId').value;
             
-            if (!title) { alert('제목을 입력하세요'); return; }
-            if (!content) { alert('내용을 입력하세요'); return; }
+            if (!title && !content) {
+                alert('제목이나 내용을 입력하세요');
+                return;
+            }
             
+            const editId = document.getElementById('editingMemoId').value;
             let memos = getMemos();
-            let memo;
             
-            if (editingId) {
-                const idx = memos.findIndex(m => m.id == editingId);
-                if (idx !== -1) {
-                    memos[idx].title = title;
-                    memos[idx].content = content;
-                    memos[idx].updatedAt = Date.now();
-                    memo = memos[idx];
-                }
+            if (editId) {
+                memos = memos.map(m => m.id == editId ? {...m, title, content, updatedAt: new Date().toISOString()} : m);
             } else {
-                memo = {
-                    id: Date.now(),
-                    folderId: currentFolderId,
-                    title: title,
-                    content: content,
-                    createdAt: Date.now(),
-                    updatedAt: Date.now()
-                };
+                const memo = { id: Date.now(), folderId: currentFolderId, title, content, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
                 memos.push(memo);
             }
             
             localStorage.setItem('memos', JSON.stringify(memos));
-            await saveMemoToServer(memo);
+            const memoToSave = memos.find(m => editId ? m.id == editId : m.title === title && m.folderId === currentFolderId);
+            await saveMemoToServer(memoToSave);
             
             closeMemoModal();
             renderMemos();
-            showSyncStatus('✓ 메모 저장 완료!', 'success');
         }
 
-        function viewMemo(memoId) {
-            const memo = getMemos().find(m => m.id == memoId);
+        function viewMemo(id) {
+            currentViewingMemoId = id;
+            const memo = getMemos().find(m => m.id === id);
             if (!memo) return;
             
-            currentViewingMemoId = memoId;
-            document.getElementById('memoViewTitle').textContent = memo.title;
-            document.getElementById('memoViewContent').textContent = memo.content;
-            document.getElementById('memoViewDate').textContent = '최종 수정: ' + new Date(memo.updatedAt).toLocaleString('ko-KR');
+            document.getElementById('memoViewTitle').textContent = memo.title || '제목 없음';
+            document.getElementById('memoViewContent').textContent = memo.content || '';
+            document.getElementById('memoViewDate').textContent = '수정: ' + new Date(memo.updatedAt).toLocaleString('ko-KR');
             document.getElementById('memoViewModal').classList.add('show');
         }
 
         function closeMemoViewModal() {
             document.getElementById('memoViewModal').classList.remove('show');
-            currentViewingMemoId = null;
         }
 
         function editCurrentMemo() {
-            const memo = getMemos().find(m => m.id == currentViewingMemoId);
+            const memo = getMemos().find(m => m.id === currentViewingMemoId);
             if (!memo) return;
             
             closeMemoViewModal();
             document.getElementById('memoModalTitle').textContent = '메모 수정';
-            document.getElementById('memoTitleInput').value = memo.title;
-            document.getElementById('memoContentInput').value = memo.content;
+            document.getElementById('memoTitleInput').value = memo.title || '';
+            document.getElementById('memoContentInput').value = memo.content || '';
             document.getElementById('editingMemoId').value = memo.id;
             document.getElementById('memoModal').classList.add('show');
         }
@@ -1492,233 +1616,72 @@
         async function deleteCurrentMemo() {
             if (!confirm('이 메모를 삭제하시겠습니까?')) return;
             
-            let memos = getMemos().filter(m => m.id != currentViewingMemoId);
+            let memos = getMemos().filter(m => m.id !== currentViewingMemoId);
             localStorage.setItem('memos', JSON.stringify(memos));
             await deleteMemoFromServer(currentViewingMemoId);
             
             closeMemoViewModal();
             renderMemos();
-            showSyncStatus('✓ 삭제 완료!', 'success');
         }
 
-        function renderStats() {
-            const orders = getOrders();
-            const total = orders.reduce((s, o) => s + (Number(o.amount)||0), 0);
-            document.getElementById('statOrders').textContent = orders.length;
-            document.getElementById('statRevenue').textContent = total.toLocaleString() + '원';
-            document.getElementById('statPaid').textContent = orders.filter(o => o.paymentStatus === '완료').length;
-            document.getElementById('statUnpaid').textContent = orders.filter(o => o.paymentStatus === '미완료').length;
-
-            const sc = {};
-            orders.forEach(o => { if(o.source) sc[o.source] = (sc[o.source]||0) + 1; });
-            const ts = Object.entries(sc).sort((a,b) => b[1]-a[1]);
-            const ms = ts[0]?.[1] || 1;
-            document.getElementById('sourceChart').innerHTML = ts.map(([s,c]) => 
-                '<div class="bar-item"><div class="w-20 text-sm">'+s+'</div><div class="flex-1"><div class="bar" style="width:'+(c/ms*100)+'%"></div></div><div class="w-10 text-right">'+c+'</div></div>'
-            ).join('') || '<div class="text-gray-500">데이터 없음</div>';
-        }
-
-        function renderMessageTab() { applyMessageFilters(); }
-        
-        function applyMessageFilters() {
-            const src = document.getElementById('filterSource').value;
-            let list = generateCustomers();
-            if (src) {
-                const phones = new Set(getOrders().filter(o => o.source === src).map(o => o.ordererPhone || o.phone));
-                list = list.filter(c => phones.has(c.phone));
-            }
-            filteredCustomers = list;
-            selectedCustomers.clear();
-            renderMessageCustomerList();
-        }
-
-        function renderMessageCustomerList() {
-            document.getElementById('messageCustomerList').innerHTML = filteredCustomers.map(c => 
-                '<div class="customer-select-card '+(selectedCustomers.has(c.phone)?'selected':'')+'" onclick="toggleSelect(\''+c.phone+'\')"><input type="checkbox" '+(selectedCustomers.has(c.phone)?'checked':'')+' onclick="event.stopPropagation()"> '+c.name+' ('+c.phone+')</div>'
-            ).join('') || '<div class="text-gray-500 text-center py-4">고객 없음</div>';
-            document.getElementById('selectedCount').textContent = selectedCustomers.size;
-        }
-
-        function toggleSelect(p) {
-            if (selectedCustomers.has(p)) selectedCustomers.delete(p);
-            else selectedCustomers.add(p);
-            renderMessageCustomerList();
-        }
-
-        function selectAllCustomers() { filteredCustomers.forEach(c => selectedCustomers.add(c.phone)); renderMessageCustomerList(); }
-        function deselectAllCustomers() { selectedCustomers.clear(); renderMessageCustomerList(); }
-        
-        function copyPhoneNumbers() {
-            if (!selectedCustomers.size) { alert('고객을 선택하세요'); return; }
-            navigator.clipboard.writeText(Array.from(selectedCustomers).join(',')).then(() => alert('✓ 복사 완료!'));
-        }
-
-        function renderSettings() {
-            document.getElementById('sourceList').innerHTML = getSources().map((s,i) => 
-                '<div class="flex justify-between items-center p-3 bg-orange-50 rounded-lg mb-2"><span>'+s+'</span><button onclick="deleteSource('+i+')" class="text-red-500 font-bold">삭제</button></div>'
-            ).join('');
-        }
-
-        function addSource() {
-            const n = prompt('새 경로:');
-            if (n) { const s = getSources(); s.push(n); localStorage.setItem('sources', JSON.stringify(s)); populateSelects(); renderSettings(); }
-        }
-        function deleteSource(i) {
-            if (confirm('삭제?')) { const s = getSources(); s.splice(i,1); localStorage.setItem('sources', JSON.stringify(s)); populateSelects(); renderSettings(); }
-        }
-
+        // ========== 백업/복원 ==========
         function backupData() {
-            const data = { orders: getOrders(), sources: getSources(), memoFolders: getMemoFolders(), memos: getMemos() };
-            const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+            const data = {
+                orders: getOrders(),
+                memoFolders: getMemoFolders(),
+                memos: getMemos(),
+                sources: getSources(),
+                backupDate: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = '떡집백업_' + new Date().toISOString().split('T')[0] + '.json';
+            a.href = url;
+            a.download = '떡집_백업_' + new Date().toISOString().split('T')[0] + '.json';
             a.click();
         }
 
-        /* ★ 수정됨: 불러오기도 병합 방식으로 변경 */
-        function restoreData(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(ev) {
-                    try {
-                        const data = JSON.parse(ev.target.result);
-
-                        // 주문 병합
-                        if (data.orders) {
-                            var localOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-                            var fileOrders = data.orders;
-                            var merged = {};
-                            localOrders.forEach(function(o) { if(o.id) merged[o.id] = o; });
-                            fileOrders.forEach(function(o) { if(o.id) merged[o.id] = o; }); // 파일이 우선(최신 백업)
-                            localStorage.setItem('orders', JSON.stringify(Object.values(merged)));
-                        }
-                        if (data.sources) localStorage.setItem('sources', JSON.stringify(data.sources));
-
-                        // 폴더 병합
-                        if (data.memoFolders) {
-                            var localFolders = JSON.parse(localStorage.getItem('memoFolders') || '[]');
-                            var fileFolders = data.memoFolders;
-                            var mergedF = {};
-                            localFolders.forEach(function(f) { if(f.id) mergedF[f.id] = f; });
-                            fileFolders.forEach(function(f) { if(f.id) mergedF[f.id] = f; });
-                            localStorage.setItem('memoFolders', JSON.stringify(Object.values(mergedF)));
-                        }
-
-                        // 메모 병합
-                        if (data.memos) {
-                            var localMemos = JSON.parse(localStorage.getItem('memos') || '[]');
-                            var fileMemos = data.memos;
-                            var mergedM = {};
-                            localMemos.forEach(function(m) { if(m.id) mergedM[m.id] = m; });
-                            fileMemos.forEach(function(m) { if(m.id) mergedM[m.id] = m; });
-                            localStorage.setItem('memos', JSON.stringify(Object.values(mergedM)));
-                        }
-
-                        alert('✓ 불러오기 완료! (기존 데이터와 병합됨)');
-                        location.reload();
-                    } catch(err) { alert('파일 오류'); }
-                };
-                reader.readAsText(file);
-            }
+        function restoreData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.orders) localStorage.setItem('orders', JSON.stringify(data.orders));
+                    if (data.memoFolders) localStorage.setItem('memoFolders', JSON.stringify(data.memoFolders));
+                    if (data.memos) localStorage.setItem('memos', JSON.stringify(data.memos));
+                    if (data.sources) localStorage.setItem('sources', JSON.stringify(data.sources));
+                    alert('✓ 데이터를 불러왔습니다!');
+                    location.reload();
+                } catch (err) {
+                    alert('파일 형식이 올바르지 않습니다');
+                }
+            };
+            reader.readAsText(file);
         }
 
-        /* ★ 수정됨: 삭제 전 자동 백업 파일 다운로드 + 이중 확인 */
         function deleteAllData() {
-            var orderCount = JSON.parse(localStorage.getItem('orders') || '[]').length;
-            if (!confirm('정말 모든 데이터(' + orderCount + '건)를 삭제하시겠습니까?\n\n삭제 전 자동으로 백업 파일이 다운로드됩니다.')) return;
-            if (!confirm('⚠️ 마지막 확인입니다.\n\n정말로 전체 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
-
-            // 삭제 전 자동 백업 파일 다운로드
-            try {
-                var backupObj = {
-                    orders: JSON.parse(localStorage.getItem('orders') || '[]'),
-                    memoFolders: JSON.parse(localStorage.getItem('memoFolders') || '[]'),
-                    memos: JSON.parse(localStorage.getItem('memos') || '[]'),
-                    sources: JSON.parse(localStorage.getItem('sources') || '[]'),
-                    backupDate: new Date().toISOString(),
-                    type: 'auto-backup-before-delete'
-                };
-                var blob = new Blob([JSON.stringify(backupObj, null, 2)], {type: 'application/json'});
-                var url = URL.createObjectURL(blob);
-                var a = document.createElement('a');
-                a.href = url;
-                a.download = '떡집_자동백업_삭제전_' + new Date().toISOString().slice(0,10) + '.json';
-                a.click();
-                URL.revokeObjectURL(url);
-            } catch(e) {}
-
-            localStorage.clear();
-            alert('삭제 완료. 백업 파일이 다운로드되었습니다.');
+            if (!confirm('정말로 모든 데이터를 삭제하시겠습니까?\n(복구 불가)')) return;
+            if (!confirm('마지막 확인: 모든 주문, 고객, 메모가 삭제됩니다.')) return;
+            
+            localStorage.removeItem('orders');
+            localStorage.removeItem('memoFolders');
+            localStorage.removeItem('memos');
+            alert('✓ 모든 데이터가 삭제되었습니다');
             location.reload();
         }
 
-                // 초기화
+        // ========== 초기화 ==========
         initializeData();
         populateSelects();
         updateCurrentTimestamp();
         setInterval(updateCurrentTimestamp, 1000);
-
-        // 서버에서 데이터 불러오기 (★ 이제 병합 방식으로 동작)
+        
         loadAllDataFromServer().then(() => {
             renderAll();
         });
-
-        /* ★ 추가: 자동 동기화 — 60초마다 서버와 병합 */
-        setInterval(async function() {
-            try {
-                var response = await fetch(API_URL + '?action=getAllData');
-                var result = await response.json();
-                if (result.success) {
-                    var changed = false;
-
-                    // 주문 병합
-                    var localOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-                    var serverOrders = result.orders || [];
-                    var merged = {};
-                    localOrders.forEach(function(o) { if(o.id) merged[o.id] = o; });
-                    var beforeCount = Object.keys(merged).length;
-                    serverOrders.forEach(function(o) { if(o.id && !merged[o.id]) { merged[o.id] = o; changed = true; } });
-                    localStorage.setItem('orders', JSON.stringify(Object.values(merged)));
-
-                    // 폴더 병합
-                    var localFolders = JSON.parse(localStorage.getItem('memoFolders') || '[]');
-                    var serverFolders = result.folders || [];
-                    var mergedF = {};
-                    localFolders.forEach(function(f) { if(f.id) mergedF[f.id] = f; });
-                    serverFolders.forEach(function(f) { if(f.id && !mergedF[f.id]) { mergedF[f.id] = f; changed = true; } });
-                    localStorage.setItem('memoFolders', JSON.stringify(Object.values(mergedF)));
-
-                    // 메모 병합
-                    var localMemos = JSON.parse(localStorage.getItem('memos') || '[]');
-                    var serverMemos = result.memos || [];
-                    var mergedM = {};
-                    localMemos.forEach(function(m) { if(m.id) mergedM[m.id] = m; });
-                    serverMemos.forEach(function(m) { if(m.id && !mergedM[m.id]) { mergedM[m.id] = m; changed = true; } });
-                    localStorage.setItem('memos', JSON.stringify(Object.values(mergedM)));
-
-                    // 새 데이터가 있을 때만 화면 갱신
-                    if (changed) {
-                        renderAll();
-                        showSyncStatus('✓ 새 데이터 동기화됨', 'success');
-                    }
-                }
-            } catch(e) {
-                // 네트워크 오류 시 무시 (다음 주기에 재시도)
-            }
-        }, 60000); // 60초(1분) 간격
-
-        /* ★ 추가: 브라우저 탭이 다시 활성화될 때 즉시 동기화 */
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                loadAllDataFromServer().then(function() {
-                    renderAll();
-                });
-            }
-        });
-
     </script>
 </body>
 </html>
-
