@@ -797,28 +797,35 @@
         function getMemos() { return JSON.parse(localStorage.getItem('memos') || '[]'); }
 
         function initializeData() {
-            if (!localStorage.getItem('sources')) localStorage.setItem('sources', JSON.stringify(['지인소개', '당근', '네이버', '인스타그램', '기존고객']));
-            if (!localStorage.getItem('deliveryTimes')) {
-                const times = [];
-                for (let i = 9; i <= 21; i++) times.push(i + '시');
-                localStorage.setItem('deliveryTimes', JSON.stringify(times));
-            }
-            if (!localStorage.getItem('paymentMethods')) localStorage.setItem('paymentMethods', JSON.stringify(['현금', '계좌이체', '카드']));
-        }
+    if (!localStorage.getItem('sources')) localStorage.setItem('sources', JSON.stringify(['지인소개', '당근', '네이버', '인스타그램', '기존고객']));
+    
+    // 배송시간: 06시 ~ 17시
+    const times = [];
+    for (let i = 6; i <= 17; i++) times.push(i + '시');
+    localStorage.setItem('deliveryTimes', JSON.stringify(times));
+    
+    if (!localStorage.getItem('paymentMethods')) localStorage.setItem('paymentMethods', JSON.stringify(['현금', '계좌이체', '카드']));
+}
 
         function populateSelects() {
-            const sources = getSources(), times = getDeliveryTimes(), methods = getPaymentMethods();
-            document.getElementById('source').innerHTML = '<option value="">선택</option>' + sources.map(s => '<option value="'+s+'">'+s+'</option>').join('');
-            document.getElementById('deliveryTime').innerHTML = '<option value="">선택</option>' + times.map(t => '<option value="'+t+'">'+t+'</option>').join('');
-            document.getElementById('paymentMethod').innerHTML = '<option value="">선택</option>' + methods.map(m => '<option value="'+m+'">'+m+'</option>').join('');
-            document.getElementById('filterSource').innerHTML = '<option value="">전체</option>' + sources.map(s => '<option value="'+s+'">'+s+'</option>').join('');
-            
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            document.getElementById('deliveryDate').valueAsDate = tomorrow;
-            document.getElementById('statusStartDate').valueAsDate = new Date();
-            document.getElementById('statusEndDate').valueAsDate = new Date();
-        }
+    const sources = getSources(), times = getDeliveryTimes(), methods = getPaymentMethods();
+    
+    // source 요소가 있을 때만 설정 (주석처리된 경우 대비)
+    const sourceEl = document.getElementById('source');
+    if (sourceEl) {
+        sourceEl.innerHTML = '<option value="">선택</option>' + sources.map(s => '<option value="'+s+'">'+s+'</option>').join('');
+    }
+    
+    document.getElementById('deliveryTime').innerHTML = '<option value="">선택</option>' + times.map(t => '<option value="'+t+'">'+t+'</option>').join('');
+    document.getElementById('paymentMethod').innerHTML = '<option value="">선택</option>' + methods.map(m => '<option value="'+m+'">'+m+'</option>').join('');
+    document.getElementById('filterSource').innerHTML = '<option value="">전체</option>' + sources.map(s => '<option value="'+s+'">'+s+'</option>').join('');
+    
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('deliveryDate').valueAsDate = tomorrow;
+    document.getElementById('statusStartDate').valueAsDate = new Date();
+    document.getElementById('statusEndDate').valueAsDate = new Date();
+}
 
         function updateCurrentTimestamp() {
             const now = new Date();
