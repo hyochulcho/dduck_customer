@@ -1014,7 +1014,8 @@
                 deliveryTime,
                 paymentStatus: document.getElementById('paymentToggle').classList.contains('active') ? '완료' : '미완료',
                 paymentMethod: document.getElementById('paymentMethod').value,
-                source: document.getElementById('source').value,
+                source: document.getElementById('source') ? document.getElementById('source').value : '',
+
                 memo: document.getElementById('orderMemo').value
             };
 
